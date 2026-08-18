@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" role="img" aria-label="Карта Лаорская Степь">
+<style>text{font-family:DejaVu Sans, sans-serif;fill:#40382c}.small{font-size:9px}.mid{font-size:12px}.big{font-size:15px;font-weight:bold}.river{fill:none;stroke:#4c7c97;stroke-width:3}.road{stroke:#92704a;stroke-width:1.2}.mroad{stroke:#735435;stroke-width:2}.mount{fill:none;stroke:#766956;stroke-width:3}.border{fill:#eee5c9;stroke:#41372a;stroke-width:2}</style>
+<polygon class="border" points="138.7,892.4 248.3,980.1 577.1,1005.2 906.0,967.6 1092.3,861.1 1037.5,673.2 1125.2,504.1 840.2,416.4 522.3,441.5 237.3,403.9 94.8,566.7 138.7,892.4"/>
+<polyline class="mount" points="105.8,466.5 259.2,428.9 423.7,454.0"/>
+<polyline class="river" points="138.7,560.5 303.1,604.3 511.3,635.6 730.6,704.5 993.7,779.7"/>
+<polyline class="river" points="467.5,435.2 533.3,541.7 511.3,635.6"/>
+<line class="mroad" x1="533.3" y1="654.4" x2="547.3" y2="656.4"/>
+<line class="mroad" x1="533.3" y1="654.4" x2="557.6" y2="647.4"/>
+<line class="mroad" x1="533.3" y1="654.4" x2="465.0" y2="632.8"/>
+<line class="mroad" x1="533.3" y1="654.4" x2="807.3" y2="754.6"/>
+<line class="mroad" x1="807.3" y1="754.6" x2="705.1" y2="697.0"/>
+<line class="mroad" x1="807.3" y1="754.6" x2="934.0" y2="761.7"/>
+<line class="mroad" x1="807.3" y1="754.6" x2="644.0" y2="678.0"/>
+<line class="road" x1="465.0" y1="632.8" x2="385.6" y2="613.4"/>
+<line class="road" x1="465.0" y1="632.8" x2="547.3" y2="656.4"/>
+<line class="road" x1="465.0" y1="632.8" x2="353.6" y2="604.4"/>
+<line class="road" x1="205.6" y1="574.7" x2="155.2" y2="564.5"/>
+<line class="road" x1="205.6" y1="574.7" x2="328.9" y2="611.8"/>
+<line class="road" x1="205.6" y1="574.7" x2="353.6" y2="604.4"/>
+<line class="road" x1="385.6" y1="613.4" x2="353.6" y2="604.4"/>
+<line class="road" x1="385.6" y1="613.4" x2="328.9" y2="611.8"/>
+<line class="road" x1="934.0" y1="761.7" x2="705.1" y2="697.0"/>
+<line class="road" x1="934.0" y1="761.7" x2="644.0" y2="678.0"/>
+<line class="road" x1="557.6" y1="647.4" x2="547.3" y2="656.4"/>
+<line class="road" x1="557.6" y1="647.4" x2="609.5" y2="665.2"/>
+<line class="road" x1="557.6" y1="647.4" x2="627.2" y2="667.5"/>
+<line class="road" x1="644.0" y1="678.0" x2="627.2" y2="667.5"/>
+<line class="road" x1="644.0" y1="678.0" x2="609.5" y2="665.2"/>
+<line class="road" x1="644.0" y1="678.0" x2="705.1" y2="697.0"/>
+<line class="road" x1="328.9" y1="611.8" x2="353.6" y2="604.4"/>
+<line class="road" x1="328.9" y1="611.8" x2="155.2" y2="564.5"/>
+<line class="road" x1="547.3" y1="656.4" x2="609.5" y2="665.2"/>
+<line class="road" x1="155.2" y1="564.5" x2="353.6" y2="604.4"/>
+<line class="road" x1="609.5" y1="665.2" x2="627.2" y2="667.5"/>
+<line class="road" x1="609.5" y1="665.2" x2="705.1" y2="697.0"/>
+<line class="road" x1="627.2" y1="667.5" x2="705.1" y2="697.0"/>
+<circle cx="533.3" cy="654.4" r="4" fill="#2d2a25"/>
+<text class="mid" x="539.3" y="650.4">Ордан</text>
+<circle cx="807.3" cy="754.6" r="4" fill="#2d2a25"/>
+<text class="mid" x="813.3" y="750.6">Харун</text>
+<circle cx="465.0" cy="632.8" r="3" fill="#2d2a25"/>
+<text class="mid" x="471.0" y="628.8">Аркар</text>
+<circle cx="205.6" cy="574.7" r="3" fill="#2d2a25"/>
+<text class="mid" x="211.6" y="570.7">Малор</text>
+<circle cx="385.6" cy="613.4" r="1.8" fill="#2d2a25"/>
+<text class="small" x="391.6" y="609.4">5</text>
+<circle cx="934.0" cy="761.7" r="1.8" fill="#2d2a25"/>
+<text class="small" x="940.0" y="757.7">6</text>
+<circle cx="557.6" cy="647.4" r="1.8" fill="#2d2a25"/>
+<text class="small" x="563.6" y="643.4">7</text>
+<circle cx="644.0" cy="678.0" r="1.8" fill="#2d2a25"/>
+<text class="small" x="650.0" y="674.0">8</text>
+<circle cx="328.9" cy="611.8" r="1.8" fill="#2d2a25"/>
+<text class="small" x="334.9" y="607.8">9</text>
+<circle cx="547.3" cy="656.4" r="1.8" fill="#2d2a25"/>
+<text class="small" x="553.3" y="652.4">10</text>
+<circle cx="155.2" cy="564.5" r="1.8" fill="#2d2a25"/>
+<text class="small" x="161.2" y="560.5">11</text>
+<circle cx="353.6" cy="604.4" r="1.8" fill="#2d2a25"/>
+<text class="small" x="359.6" y="600.4">12</text>
+<circle cx="609.5" cy="665.2" r="1.8" fill="#2d2a25"/>
+<text class="small" x="615.5" y="661.2">13</text>
+<circle cx="627.2" cy="667.5" r="1.8" fill="#2d2a25"/>
+<text class="small" x="633.2" y="663.5">14</text>
+<circle cx="705.1" cy="697.0" r="1.8" fill="#2d2a25"/>
+<text class="small" x="711.1" y="693.0">15</text>
+<text class="big" x="1260" y="70">Лаорская Конфедерация</text>
+<text class="mid" x="1260" y="95">Площадь: 1 280 000 км²</text>
+<text class="small" x="1260" y="130">1. Ордан — 66 000</text>
+<text class="small" x="1260" y="141">2. Харун — 57 000</text>
+<text class="small" x="1260" y="152">3. Аркар — 26 186</text>
+<text class="small" x="1260" y="163">4. Малор — 22 261</text>
+<text class="small" x="1260" y="174">5. Эрким — 10 883</text>
+<text class="small" x="1260" y="185">6. Джалор — 9 327</text>
+<text class="small" x="1260" y="196">7. Калир — 9 161</text>
+<text class="small" x="1260" y="207">8. Курарг — 8 806</text>
+<text class="small" x="1260" y="218">9. Джалул — 7 168</text>
+<text class="small" x="1260" y="229">10. Эркул — 5 651</text>
+<text class="small" x="1260" y="240">11. Тайул — 4 604</text>
+<text class="small" x="1260" y="251">12. Терат — 3 691</text>
+<text class="small" x="1260" y="262">13. Ойим — 3 262</text>
+<text class="small" x="1260" y="273">14. Орим — 3 000</text>
+<text class="small" x="1260" y="284">15. Барир — 3 000</text>
+</svg>

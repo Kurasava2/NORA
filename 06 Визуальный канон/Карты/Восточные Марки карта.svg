@@ -1,0 +1,271 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" role="img" aria-label="Карта Восточные Марки">
+<style>text{font-family:DejaVu Sans, sans-serif;fill:#40382c}.small{font-size:9px}.mid{font-size:12px}.big{font-size:15px;font-weight:bold}.river{fill:none;stroke:#4c7c97;stroke-width:3}.road{stroke:#92704a;stroke-width:1.2}.mroad{stroke:#735435;stroke-width:2}.mount{fill:none;stroke:#766956;stroke-width:3}.border{fill:#eee5c9;stroke:#41372a;stroke-width:2}</style>
+<polygon class="border" points="148.6,975.1 517.7,1005.7 821.7,952.2 1093.1,814.6 1028.0,623.4 1125.7,417.0 854.3,294.6 539.4,340.5 268.0,279.4 94.3,470.5 170.3,676.9 148.6,975.1"/>
+<polyline class="mount" points="170.3,417.0 365.7,363.5 561.1,394.0"/>
+<polyline class="mount" points="843.4,493.4 952.0,417.0 1093.1,455.2"/>
+<polyline class="river" points="235.4,332.9 322.3,478.1 496.0,592.8 734.9,692.2 1028.0,799.3"/>
+<polyline class="river" points="821.7,325.2 767.4,493.4 734.9,692.2"/>
+<line class="mroad" x1="474.3" y1="646.4" x2="493.9" y2="593.8"/>
+<line class="mroad" x1="474.3" y1="646.4" x2="518.9" y2="607.2"/>
+<line class="mroad" x1="474.3" y1="646.4" x2="471.6" y2="586.9"/>
+<line class="mroad" x1="474.3" y1="646.4" x2="466.1" y2="565.7"/>
+<line class="mroad" x1="474.3" y1="646.4" x2="915.9" y2="757.0"/>
+<line class="mroad" x1="915.9" y1="757.0" x2="942.2" y2="768.2"/>
+<line class="mroad" x1="915.9" y1="757.0" x2="879.0" y2="748.3"/>
+<line class="mroad" x1="915.9" y1="757.0" x2="959.0" y2="770.0"/>
+<line class="mroad" x1="915.9" y1="757.0" x2="977.6" y2="780.6"/>
+<line class="road" x1="272.9" y1="395.1" x2="277.5" y2="409.0"/>
+<line class="road" x1="272.9" y1="395.1" x2="286.9" y2="427.4"/>
+<line class="road" x1="272.9" y1="395.1" x2="242.6" y2="347.1"/>
+<line class="road" x1="272.9" y1="395.1" x2="302.8" y2="445.8"/>
+<line class="road" x1="493.9" y1="593.8" x2="471.6" y2="586.9"/>
+<line class="road" x1="493.9" y1="593.8" x2="518.9" y2="607.2"/>
+<line class="road" x1="493.9" y1="593.8" x2="466.1" y2="565.7"/>
+<line class="road" x1="493.9" y1="593.8" x2="568.5" y2="623.3"/>
+<line class="road" x1="802.6" y1="395.4" x2="801.7" y2="418.7"/>
+<line class="road" x1="802.6" y1="395.4" x2="807.3" y2="371.5"/>
+<line class="road" x1="802.6" y1="395.4" x2="781.6" y2="433.5"/>
+<line class="road" x1="802.6" y1="395.4" x2="809.5" y2="350.7"/>
+<line class="road" x1="802.6" y1="395.4" x2="812.1" y2="329.2"/>
+<line class="road" x1="802.6" y1="395.4" x2="792.8" y2="456.1"/>
+<line class="road" x1="518.9" y1="607.2" x2="471.6" y2="586.9"/>
+<line class="road" x1="518.9" y1="607.2" x2="568.5" y2="623.3"/>
+<line class="road" x1="518.9" y1="607.2" x2="589.5" y2="633.1"/>
+<line class="road" x1="745.3" y1="617.4" x2="748.6" y2="636.0"/>
+<line class="road" x1="745.3" y1="617.4" x2="736.2" y2="647.9"/>
+<line class="road" x1="745.3" y1="617.4" x2="763.3" y2="582.2"/>
+<line class="road" x1="745.3" y1="617.4" x2="754.3" y2="566.1"/>
+<line class="road" x1="758.9" y1="504.3" x2="760.0" y2="526.3"/>
+<line class="road" x1="758.9" y1="504.3" x2="761.1" y2="550.6"/>
+<line class="road" x1="758.9" y1="504.3" x2="792.8" y2="456.1"/>
+<line class="road" x1="758.9" y1="504.3" x2="754.3" y2="566.1"/>
+<line class="road" x1="879.0" y1="748.3" x2="820.7" y2="718.6"/>
+<line class="road" x1="879.0" y1="748.3" x2="942.2" y2="768.2"/>
+<line class="road" x1="879.0" y1="748.3" x2="959.0" y2="770.0"/>
+<line class="road" x1="350.4" y1="492.9" x2="355.9" y2="506.6"/>
+<line class="road" x1="350.4" y1="492.9" x2="328.1" y2="480.5"/>
+<line class="road" x1="350.4" y1="492.9" x2="311.2" y2="460.1"/>
+<line class="road" x1="350.4" y1="492.9" x2="393.0" y2="524.1"/>
+<line class="road" x1="589.5" y1="633.1" x2="568.5" y2="623.3"/>
+<line class="road" x1="589.5" y1="633.1" x2="644.4" y2="656.9"/>
+<line class="road" x1="589.5" y1="633.1" x2="665.8" y2="659.6"/>
+<line class="road" x1="720.9" y1="685.5" x2="740.5" y2="676.8"/>
+<line class="road" x1="720.9" y1="685.5" x2="688.6" y2="672.2"/>
+<line class="road" x1="720.9" y1="685.5" x2="736.2" y2="647.9"/>
+<line class="road" x1="720.9" y1="685.5" x2="766.5" y2="708.7"/>
+<line class="road" x1="720.9" y1="685.5" x2="644.4" y2="656.9"/>
+<line class="road" x1="720.9" y1="685.5" x2="665.8" y2="659.6"/>
+<line class="road" x1="720.9" y1="685.5" x2="781.3" y2="713.5"/>
+<line class="road" x1="781.6" y1="433.5" x2="801.7" y2="418.7"/>
+<line class="road" x1="781.6" y1="433.5" x2="792.8" y2="456.1"/>
+<line class="road" x1="781.6" y1="433.5" x2="807.3" y2="371.5"/>
+<line class="road" x1="393.0" y1="524.1" x2="410.3" y2="540.9"/>
+<line class="road" x1="393.0" y1="524.1" x2="355.9" y2="506.6"/>
+<line class="road" x1="393.0" y1="524.1" x2="429.3" y2="547.7"/>
+<line class="road" x1="471.6" y1="586.9" x2="466.1" y2="565.7"/>
+<line class="road" x1="471.6" y1="586.9" x2="429.3" y2="547.7"/>
+<line class="road" x1="754.3" y1="566.1" x2="761.1" y2="550.6"/>
+<line class="road" x1="754.3" y1="566.1" x2="763.3" y2="582.2"/>
+<line class="road" x1="754.3" y1="566.1" x2="760.0" y2="526.3"/>
+<line class="road" x1="959.0" y1="770.0" x2="942.2" y2="768.2"/>
+<line class="road" x1="959.0" y1="770.0" x2="977.6" y2="780.6"/>
+<line class="road" x1="959.0" y1="770.0" x2="998.5" y2="778.1"/>
+<line class="road" x1="959.0" y1="770.0" x2="1006.5" y2="792.3"/>
+<line class="road" x1="766.5" y1="708.7" x2="781.3" y2="713.5"/>
+<line class="road" x1="766.5" y1="708.7" x2="740.5" y2="676.8"/>
+<line class="road" x1="766.5" y1="708.7" x2="820.7" y2="718.6"/>
+<line class="road" x1="812.1" y1="329.2" x2="809.5" y2="350.7"/>
+<line class="road" x1="812.1" y1="329.2" x2="807.3" y2="371.5"/>
+<line class="road" x1="812.1" y1="329.2" x2="801.7" y2="418.7"/>
+<line class="road" x1="736.2" y1="647.9" x2="748.6" y2="636.0"/>
+<line class="road" x1="736.2" y1="647.9" x2="740.5" y2="676.8"/>
+<line class="road" x1="736.2" y1="647.9" x2="665.8" y2="659.6"/>
+<line class="road" x1="820.7" y1="718.6" x2="781.3" y2="713.5"/>
+<line class="road" x1="820.7" y1="718.6" x2="740.5" y2="676.8"/>
+<line class="road" x1="286.9" y1="427.4" x2="277.5" y2="409.0"/>
+<line class="road" x1="286.9" y1="427.4" x2="302.8" y2="445.8"/>
+<line class="road" x1="286.9" y1="427.4" x2="311.2" y2="460.1"/>
+<line class="road" x1="286.9" y1="427.4" x2="242.6" y2="347.1"/>
+<line class="road" x1="328.1" y1="480.5" x2="311.2" y2="460.1"/>
+<line class="road" x1="328.1" y1="480.5" x2="355.9" y2="506.6"/>
+<line class="road" x1="328.1" y1="480.5" x2="302.8" y2="445.8"/>
+<line class="road" x1="998.5" y1="778.1" x2="1006.5" y2="792.3"/>
+<line class="road" x1="998.5" y1="778.1" x2="977.6" y2="780.6"/>
+<line class="road" x1="998.5" y1="778.1" x2="942.2" y2="768.2"/>
+<line class="road" x1="568.5" y1="623.3" x2="644.4" y2="656.9"/>
+<line class="road" x1="355.9" y1="506.6" x2="410.3" y2="540.9"/>
+<line class="road" x1="760.0" y1="526.3" x2="761.1" y2="550.6"/>
+<line class="road" x1="760.0" y1="526.3" x2="763.3" y2="582.2"/>
+<line class="road" x1="644.4" y1="656.9" x2="665.8" y2="659.6"/>
+<line class="road" x1="644.4" y1="656.9" x2="688.6" y2="672.2"/>
+<line class="road" x1="1006.5" y1="792.3" x2="977.6" y2="780.6"/>
+<line class="road" x1="1006.5" y1="792.3" x2="942.2" y2="768.2"/>
+<line class="road" x1="977.6" y1="780.6" x2="942.2" y2="768.2"/>
+<line class="road" x1="311.2" y1="460.1" x2="302.8" y2="445.8"/>
+<line class="road" x1="311.2" y1="460.1" x2="277.5" y2="409.0"/>
+<line class="road" x1="665.8" y1="659.6" x2="688.6" y2="672.2"/>
+<line class="road" x1="410.3" y1="540.9" x2="429.3" y2="547.7"/>
+<line class="road" x1="410.3" y1="540.9" x2="466.1" y2="565.7"/>
+<line class="road" x1="807.3" y1="371.5" x2="809.5" y2="350.7"/>
+<line class="road" x1="807.3" y1="371.5" x2="801.7" y2="418.7"/>
+<line class="road" x1="242.6" y1="347.1" x2="277.5" y2="409.0"/>
+<line class="road" x1="242.6" y1="347.1" x2="302.8" y2="445.8"/>
+<line class="road" x1="748.6" y1="636.0" x2="740.5" y2="676.8"/>
+<line class="road" x1="748.6" y1="636.0" x2="763.3" y2="582.2"/>
+<line class="road" x1="781.3" y1="713.5" x2="740.5" y2="676.8"/>
+<line class="road" x1="429.3" y1="547.7" x2="466.1" y2="565.7"/>
+<line class="road" x1="809.5" y1="350.7" x2="801.7" y2="418.7"/>
+<line class="road" x1="277.5" y1="409.0" x2="302.8" y2="445.8"/>
+<line class="road" x1="688.6" y1="672.2" x2="740.5" y2="676.8"/>
+<line class="road" x1="761.1" y1="550.6" x2="763.3" y2="582.2"/>
+<line class="road" x1="801.7" y1="418.7" x2="792.8" y2="456.1"/>
+<circle cx="474.3" cy="646.4" r="5" fill="#2d2a25"/>
+<text class="big" x="480.3" y="642.4">Дарен</text>
+<circle cx="915.9" cy="757.0" r="4" fill="#2d2a25"/>
+<text class="mid" x="921.9" y="753.0">Ирет</text>
+<circle cx="272.9" cy="395.1" r="3" fill="#2d2a25"/>
+<text class="mid" x="278.9" y="391.1">Урар</text>
+<circle cx="493.9" cy="593.8" r="3" fill="#2d2a25"/>
+<text class="mid" x="499.9" y="589.8">Девин</text>
+<circle cx="802.6" cy="395.4" r="3" fill="#2d2a25"/>
+<text class="mid" x="808.6" y="391.4">Девон</text>
+<circle cx="518.9" cy="607.2" r="3" fill="#2d2a25"/>
+<text class="mid" x="524.9" y="603.2">Ирин</text>
+<circle cx="745.3" cy="617.4" r="3" fill="#2d2a25"/>
+<text class="mid" x="751.3" y="613.4">Керан</text>
+<circle cx="758.9" cy="504.3" r="3" fill="#2d2a25"/>
+<text class="mid" x="764.9" y="500.3">Эйар</text>
+<circle cx="879.0" cy="748.3" r="3" fill="#2d2a25"/>
+<text class="mid" x="885.0" y="744.3">Касум</text>
+<circle cx="350.4" cy="492.9" r="3" fill="#2d2a25"/>
+<text class="mid" x="356.4" y="488.9">Талес</text>
+<circle cx="589.5" cy="633.1" r="3" fill="#2d2a25"/>
+<text class="mid" x="595.5" y="629.1">Йорин</text>
+<circle cx="720.9" cy="685.5" r="3" fill="#2d2a25"/>
+<text class="mid" x="726.9" y="681.5">Грейес</text>
+<circle cx="781.6" cy="433.5" r="3" fill="#2d2a25"/>
+<text class="mid" x="787.6" y="429.5">Велет</text>
+<circle cx="393.0" cy="524.1" r="1.8" fill="#2d2a25"/>
+<text class="small" x="399.0" y="520.1">14</text>
+<circle cx="471.6" cy="586.9" r="1.8" fill="#2d2a25"/>
+<text class="small" x="477.6" y="582.9">15</text>
+<circle cx="754.3" cy="566.1" r="1.8" fill="#2d2a25"/>
+<text class="small" x="760.3" y="562.1">16</text>
+<circle cx="959.0" cy="770.0" r="1.8" fill="#2d2a25"/>
+<text class="small" x="965.0" y="766.0">17</text>
+<circle cx="766.5" cy="708.7" r="1.8" fill="#2d2a25"/>
+<text class="small" x="772.5" y="704.7">18</text>
+<circle cx="812.1" cy="329.2" r="1.8" fill="#2d2a25"/>
+<text class="small" x="818.1" y="325.2">19</text>
+<circle cx="736.2" cy="647.9" r="1.8" fill="#2d2a25"/>
+<text class="small" x="742.2" y="643.9">20</text>
+<circle cx="820.7" cy="718.6" r="1.8" fill="#2d2a25"/>
+<text class="small" x="826.7" y="714.6">21</text>
+<circle cx="286.9" cy="427.4" r="1.8" fill="#2d2a25"/>
+<text class="small" x="292.9" y="423.4">22</text>
+<circle cx="328.1" cy="480.5" r="1.8" fill="#2d2a25"/>
+<text class="small" x="334.1" y="476.5">23</text>
+<circle cx="998.5" cy="778.1" r="1.8" fill="#2d2a25"/>
+<text class="small" x="1004.5" y="774.1">24</text>
+<circle cx="568.5" cy="623.3" r="1.8" fill="#2d2a25"/>
+<text class="small" x="574.5" y="619.3">25</text>
+<circle cx="355.9" cy="506.6" r="1.8" fill="#2d2a25"/>
+<text class="small" x="361.9" y="502.6">26</text>
+<circle cx="760.0" cy="526.3" r="1.8" fill="#2d2a25"/>
+<text class="small" x="766.0" y="522.3">27</text>
+<circle cx="644.4" cy="656.9" r="1.8" fill="#2d2a25"/>
+<text class="small" x="650.4" y="652.9">28</text>
+<circle cx="1006.5" cy="792.3" r="1.8" fill="#2d2a25"/>
+<text class="small" x="1012.5" y="788.3">29</text>
+<circle cx="977.6" cy="780.6" r="1.8" fill="#2d2a25"/>
+<text class="small" x="983.6" y="776.6">30</text>
+<circle cx="311.2" cy="460.1" r="1.8" fill="#2d2a25"/>
+<text class="small" x="317.2" y="456.1">31</text>
+<circle cx="665.8" cy="659.6" r="1.8" fill="#2d2a25"/>
+<text class="small" x="671.8" y="655.6">32</text>
+<circle cx="942.2" cy="768.2" r="1.8" fill="#2d2a25"/>
+<text class="small" x="948.2" y="764.2">33</text>
+<circle cx="410.3" cy="540.9" r="1.8" fill="#2d2a25"/>
+<text class="small" x="416.3" y="536.9">34</text>
+<circle cx="807.3" cy="371.5" r="1.8" fill="#2d2a25"/>
+<text class="small" x="813.3" y="367.5">35</text>
+<circle cx="242.6" cy="347.1" r="1.8" fill="#2d2a25"/>
+<text class="small" x="248.6" y="343.1">36</text>
+<circle cx="748.6" cy="636.0" r="1.8" fill="#2d2a25"/>
+<text class="small" x="754.6" y="632.0">37</text>
+<circle cx="781.3" cy="713.5" r="1.8" fill="#2d2a25"/>
+<text class="small" x="787.3" y="709.5">38</text>
+<circle cx="429.3" cy="547.7" r="1.8" fill="#2d2a25"/>
+<text class="small" x="435.3" y="543.7">39</text>
+<circle cx="809.5" cy="350.7" r="1.8" fill="#2d2a25"/>
+<text class="small" x="815.5" y="346.7">40</text>
+<circle cx="277.5" cy="409.0" r="1.8" fill="#2d2a25"/>
+<text class="small" x="283.5" y="405.0">41</text>
+<circle cx="466.1" cy="565.7" r="1.8" fill="#2d2a25"/>
+<text class="small" x="472.1" y="561.7">42</text>
+<circle cx="688.6" cy="672.2" r="1.8" fill="#2d2a25"/>
+<text class="small" x="694.6" y="668.2">43</text>
+<circle cx="761.1" cy="550.6" r="1.8" fill="#2d2a25"/>
+<text class="small" x="767.1" y="546.6">44</text>
+<circle cx="801.7" cy="418.7" r="1.8" fill="#2d2a25"/>
+<text class="small" x="807.7" y="414.7">45</text>
+<circle cx="302.8" cy="445.8" r="1.8" fill="#2d2a25"/>
+<text class="small" x="308.8" y="441.8">46</text>
+<circle cx="740.5" cy="676.8" r="1.8" fill="#2d2a25"/>
+<text class="small" x="746.5" y="672.8">47</text>
+<circle cx="763.3" cy="582.2" r="1.8" fill="#2d2a25"/>
+<text class="small" x="769.3" y="578.2">48</text>
+<circle cx="792.8" cy="456.1" r="1.8" fill="#2d2a25"/>
+<text class="small" x="798.8" y="452.1">49</text>
+<text class="big" x="1260" y="70">Восточные Марки</text>
+<text class="mid" x="1260" y="95">Площадь: 1 170 000 км²</text>
+<text class="small" x="1260" y="130">1. Дарен — 112 000</text>
+<text class="small" x="1260" y="141">2. Ирет — 69 944</text>
+<text class="small" x="1260" y="152">3. Урар — 37 756</text>
+<text class="small" x="1260" y="163">4. Девин — 36 166</text>
+<text class="small" x="1260" y="174">5. Девон — 32 816</text>
+<text class="small" x="1260" y="185">6. Ирин — 32 787</text>
+<text class="small" x="1260" y="196">7. Керан — 31 050</text>
+<text class="small" x="1260" y="207">8. Эйар — 30 477</text>
+<text class="small" x="1260" y="218">9. Касум — 29 206</text>
+<text class="small" x="1260" y="229">10. Талес — 27 544</text>
+<text class="small" x="1260" y="240">11. Йорин — 18 412</text>
+<text class="small" x="1260" y="251">12. Грейес — 17 934</text>
+<text class="small" x="1260" y="262">13. Велет — 17 191</text>
+<text class="small" x="1260" y="273">14. Велен — 10 887</text>
+<text class="small" x="1260" y="284">15. Варан — 10 617</text>
+<text class="small" x="1260" y="295">16. Фарев — 10 581</text>
+<text class="small" x="1260" y="306">17. Девор — 10 570</text>
+<text class="small" x="1260" y="317">18. Сарир — 10 547</text>
+<text class="small" x="1260" y="328">19. Талат — 10 283</text>
+<text class="small" x="1260" y="339">20. Йорос — 8 529</text>
+<text class="small" x="1260" y="350">21. Йорет — 8 374</text>
+<text class="small" x="1260" y="361">22. Ренев — 7 920</text>
+<text class="small" x="1260" y="372">23. Лорум — 7 910</text>
+<text class="small" x="1260" y="383">24. Керум — 7 838</text>
+<text class="small" x="1260" y="394">25. Варен — 7 673</text>
+<text class="small" x="1260" y="405">26. Грейет — 7 287</text>
+<text class="small" x="1260" y="416">27. Нарон — 6 633</text>
+<text class="small" x="1260" y="427">28. Касор — 6 626</text>
+<text class="small" x="1260" y="438">29. Талев — 6 119</text>
+<text class="small" x="1260" y="449">30. Белель — 6 006</text>
+<text class="small" x="1260" y="460">31. Орет — 5 928</text>
+<text class="small" x="1260" y="471">32. Фарон — 5 863</text>
+<text class="small" x="1260" y="482">33. Фарель — 5 511</text>
+<text class="small" x="1260" y="493">34. Йорум — 4 507</text>
+<text class="small" x="1260" y="504">35. Тален — 4 279</text>
+<text class="small" x="1260" y="515">36. Варис — 4 100</text>
+<text class="small" x="1260" y="526">37. Керарр — 4 033</text>
+<text class="small" x="1260" y="537">38. Эйель — 3 867</text>
+<text class="small" x="1260" y="548">39. Керис — 3 446</text>
+<text class="small" x="1260" y="559">40. Фарос — 3 416</text>
+<text class="small" x="1260" y="570">41. Дарор — 3 367</text>
+<text class="small" x="1260" y="581">42. Йоран — 3 000</text>
+<text class="small" x="1260" y="592">43. Фарарр — 3 000</text>
+<text class="small" x="1260" y="603">44. Талон — 3 000</text>
+<text class="small" x="1260" y="614">45. Урев — 3 000</text>
+<text class="small" x="1260" y="625">46. Велон — 3 000</text>
+<text class="small" x="1260" y="636">47. Сарарр — 3 000</text>
+<text class="small" x="1260" y="647">48. Урир — 3 000</text>
+<text class="small" x="1260" y="658">49. Варум — 3 000</text>
+</svg>
