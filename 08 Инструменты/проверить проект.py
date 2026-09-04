@@ -6,6 +6,30 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 errors = []
+
+WINDOWS_FORBIDDEN = set('<>:"\\|?*')
+WINDOWS_RESERVED = {"CON", "PRN", "AUX", "NUL"}
+WINDOWS_RESERVED.update({f"COM{i}" for i in range(1, 10)})
+WINDOWS_RESERVED.update({f"LPT{i}" for i in range(1, 10)})
+
+for path in ROOT.rglob("*"):
+    rel = path.relative_to(ROOT)
+    if rel.parts and rel.parts[0] == ".git":
+        continue
+    for part in rel.parts:
+        bad_chars = sorted({ch for ch in part if ch in WINDOWS_FORBIDDEN or ord(ch) < 32})
+        if bad_chars:
+            shown = " ".join(repr(ch) for ch in bad_chars)
+            errors.append(f"Непереносимое имя пути ({shown}): {rel}")
+            break
+        if part.endswith((" ", ".")):
+            errors.append(f"Имя пути заканчивается пробелом или точкой: {rel}")
+            break
+        device_base = part.rstrip(" .").split(".", 1)[0].upper()
+        if device_base in WINDOWS_RESERVED:
+            errors.append(f"Зарезервированное системное имя пути {device_base}: {rel}")
+            break
+
 chapters = sorted((ROOT / "01 Новелла/Рукопись").rglob("Глава *.md"))
 if len(chapters) != 50:
     errors.append(f"Глав: {len(chapters)}, ожидалось 50")
@@ -40,7 +64,7 @@ for forbidden in ["Найра", "Весса", "Ильва Сенн", "Казэл
                 break
 for forbidden_term in ["Viz", "Resonance"]:
     for path in (ROOT / "01 Новелла").rglob("*.md"):
-        if re.search(rf"{forbidden_term}", path.read_text(encoding="utf-8", errors="ignore")):
+        if re.search(rf"\b{forbidden_term}\b", path.read_text(encoding="utf-8", errors="ignore")):
             errors.append(f"Нерусский термин {forbidden_term}: {path.relative_to(ROOT)}")
             break
 if errors:
@@ -49,4 +73,4 @@ if errors:
         print("-", error)
     sys.exit(1)
 print("ПРОВЕРКА ПРОЙДЕНА")
-print(f"Глав: {len(chapters)}; ключ читалки сохранён")
+print(f"Глав: {len(chapters)}; ключ читалки сохранён; имена путей переносимы")
