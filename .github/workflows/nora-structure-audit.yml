@@ -1,0 +1,22 @@
+name: NORA structure audit
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate project
+        run: python "08 Инструменты/проверить проект.py"
+
+      - name: Audit incoming links
+        run: python "08 Инструменты/аудит входящих ссылок.py"
