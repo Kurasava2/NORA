@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Полный аудит входящих ссылок для зон физической миграции NORA."""
+"""Полный аудит ссылок и path-зависимостей для зон физической миграции NORA."""
 from __future__ import annotations
 
 from collections import defaultdict
@@ -108,6 +108,7 @@ def in_group(path: str, spec: dict) -> bool:
 
 
 edges = []
+unresolved_all = []
 unresolved_target_like = []
 literal_hits = defaultdict(list)
 
@@ -121,9 +122,11 @@ for source_rel, path in sorted(FILES.items()):
             if candidates:
                 for target_rel in candidates:
                     edges.append((source_rel, target_rel, kind, raw.strip()))
-            elif cleaned and any(h in cleaned.lower() for h in TARGET_HINTS):
+            elif cleaned and not cleaned.startswith(SCHEMES):
                 line = text.count('\n', 0, m.start()) + 1
-                unresolved_target_like.append((source_rel, line, kind, raw.strip()))
+                unresolved_all.append((source_rel, line, kind, raw.strip()))
+                if any(h in cleaned.lower() for h in TARGET_HINTS):
+                    unresolved_target_like.append((source_rel, line, kind, raw.strip()))
 
     source_pp = PurePosixPath(source_rel)
     if source_pp in (SELF, WORKFLOW):
@@ -140,17 +143,29 @@ for source_rel, path in sorted(FILES.items()):
                 literal_hits[group].append((source_rel, line, probe))
                 start = pos + len(probe)
 
-print('NORA — полный аудит входящих ссылок')
+print('NORA — полный аудит ссылок зон миграции')
 print(f'Текстовых файлов просканировано: {len(FILES)}')
 print(f'Разрешённых внутренних ссылочных рёбер: {len(edges)}')
 print()
 
 for group, spec in TARGETS.items():
-    group_edges = [e for e in edges if in_group(e[1], spec)]
+    incoming = [e for e in edges if in_group(e[1], spec)]
+    outgoing = [e for e in edges if in_group(e[0], spec) and not in_group(e[1], spec)]
+    unresolved_out = [u for u in unresolved_all if in_group(u[0], spec)]
+
     print(f'## {group}')
-    print(f'Разрешённых входящих ссылок: {len(group_edges)}')
-    for source, target, kind, raw in sorted(set(group_edges)):
+    print(f'Разрешённых входящих ссылок: {len(incoming)}')
+    for source, target, kind, raw in sorted(set(incoming)):
         print(f'- {source} -> {target} [{kind}] :: {raw}')
+
+    print(f'Разрешённых исходящих ссылок наружу: {len(outgoing)}')
+    for source, target, kind, raw in sorted(set(outgoing)):
+        print(f'- {source} -> {target} [{kind}] :: {raw}')
+
+    print(f'Неразрешённых исходящих ссылок: {len(unresolved_out)}')
+    for source, line, kind, raw in sorted(set(unresolved_out)):
+        print(f'- {source}:{line} [{kind}] :: {raw}')
+
     hits = sorted(set(literal_hits[group]))
     print(f'Буквальных path-зависимостей: {len(hits)}')
     for source, line, probe in hits:
