@@ -19,4 +19,5 @@ jobs:
         run: python "08 Инструменты/проверить проект.py"
 
       - name: Audit incoming links
+        if: always()
         run: python "08 Инструменты/аудит входящих ссылок.py"
