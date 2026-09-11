@@ -1,0 +1,1 @@
+Trigger Win7 portable build for GSM Vedomosti v1.2.0.
