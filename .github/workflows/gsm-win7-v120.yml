@@ -1,0 +1,58 @@
+name: GSM Win7 v1.2.0
+
+on:
+  push:
+    branches: [gsm-build-v1-1]
+    paths:
+      - '.gsm-build-v120/**'
+      - '.github/workflows/gsm-win7-v120.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: '.gsm-build-v120/work/package-lock.json'
+
+      - name: Reconstruct source
+        shell: pwsh
+        run: |
+          $parts = Get-ChildItem '.gsm-build-v120/chunk*.txt' | Sort-Object Name
+          if ($parts.Count -lt 1) { throw 'Source chunks not found' }
+          $b64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\gsm-source.zip", [Convert]::FromBase64String($b64))
+          New-Item -ItemType Directory -Force '.gsm-build-v120/work' | Out-Null
+          Expand-Archive "$env:RUNNER_TEMP\gsm-source.zip" '.gsm-build-v120/work' -Force
+          Get-ChildItem '.gsm-build-v120/work'
+
+      - name: Install dependencies
+        working-directory: .gsm-build-v120/work
+        run: npm install --no-audit --no-fund
+
+      - name: Build portable Windows 7 executable
+        working-directory: .gsm-build-v120/work
+        run: npm run dist:win7
+
+      - name: Verify executable
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem '.gsm-build-v120/work/release/*.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'Portable EXE was not produced' }
+          Write-Host "Built: $($exe.FullName) $([math]::Round($exe.Length / 1MB, 2)) MB"
+          Get-FileHash $exe.FullName -Algorithm SHA256
+
+      - name: Upload portable executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: GSM-Vedomosti-1.2.0-Win7
+          path: .gsm-build-v120/work/release/*.exe
+          if-no-files-found: error
+          compression-level: 0
