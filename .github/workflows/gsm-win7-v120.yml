@@ -1,80 +1,10 @@
-name: GSM Win7 v1.2.2 x86
+name: Legacy GSM build (manual only)
 
 on:
-  push:
-    branches: [gsm-build-v1-1]
-    paths:
-      - '.gsm-build-v120/**'
-      - '.gsm-build-v121/**'
-      - '.gsm-build-v122/**'
-      - '.github/workflows/gsm-win7-v120.yml'
-  pull_request:
-    branches: [gsm-build-v1-1]
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: windows-2022
+  legacy:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node 18
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Reconstruct v1.2.0 source
-        shell: pwsh
-        run: |
-          $parts = Get-ChildItem '.gsm-build-v120/chunk*.txt' | Sort-Object Name
-          if ($parts.Count -lt 1) { throw 'Source chunks not found' }
-          $b64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
-          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\gsm-source.zip", [Convert]::FromBase64String($b64))
-          New-Item -ItemType Directory -Force '.gsm-build-v120/work' | Out-Null
-          Expand-Archive "$env:RUNNER_TEMP\gsm-source.zip" '.gsm-build-v120/work' -Force
-
-      - name: Apply v1.2.1 changes
-        run: node .gsm-build-v121/patch-v121.cjs .gsm-build-v120/work
-
-      - name: Apply v1.2.2 local font changes
-        run: node .gsm-build-v122/patch-v122.cjs .gsm-build-v120/work
-
-      - name: Bundle JetBrains Mono locally
-        shell: pwsh
-        run: |
-          $fontDir = '.gsm-build-v120/work/src/assets'
-          New-Item -ItemType Directory -Force $fontDir | Out-Null
-          $font = Join-Path $fontDir 'JetBrainsMono.woff2'
-          Invoke-WebRequest 'https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono%5Bwght%5D.woff2' -OutFile $font
-          $bytes = [IO.File]::ReadAllBytes($font)
-          if ($bytes.Length -lt 50000) { throw 'JetBrains Mono download is unexpectedly small' }
-          $sig = [Text.Encoding]::ASCII.GetString($bytes[0..3])
-          if ($sig -ne 'wOF2') { throw "Unexpected font signature: $sig" }
-          New-Item -ItemType Directory -Force '.gsm-build-v120/work/public/licenses' | Out-Null
-          Invoke-WebRequest 'https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/OFL.txt' -OutFile '.gsm-build-v120/work/public/licenses/JetBrainsMono-OFL.txt'
-          Write-Host "Bundled JetBrains Mono: $([math]::Round($bytes.Length / 1KB, 1)) KB"
-
-      - name: Install dependencies
-        working-directory: .gsm-build-v120/work
-        run: npm install --no-audit --no-fund
-
-      - name: Build portable Windows 7 x86 executable
-        working-directory: .gsm-build-v120/work
-        run: npm run dist:win7:x86
-
-      - name: Verify executable
-        shell: pwsh
-        run: |
-          $exe = Get-ChildItem '.gsm-build-v120/work/release/*.exe' | Select-Object -First 1
-          if (-not $exe) { throw 'Portable EXE was not produced' }
-          Write-Host "Built: $($exe.FullName) $([math]::Round($exe.Length / 1MB, 2)) MB"
-          Get-FileHash $exe.FullName -Algorithm SHA256
-
-      - name: Upload portable executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: GSM-Vedomosti-1.2.2-Win7-x86
-          path: .gsm-build-v120/work/release/*.exe
-          if-no-files-found: error
-          compression-level: 0
+      - run: echo "Legacy workflow retained for history; v1.3.0 uses gsm-win7-v130.yml"

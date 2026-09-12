@@ -1,0 +1,103 @@
+name: GSM Win7 v1.3.0 x86 redesign
+
+on:
+  pull_request:
+    branches: [gsm-build-v1-1]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Reconstruct v1.3.0 source
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force '.gsm-build-v130/work' | Out-Null
+          Expand-Archive '.gsm-build-v130/source.zip' '.gsm-build-v130/work' -Force
+          if (-not (Test-Path '.gsm-build-v130/work/package.json')) { throw 'package.json missing' }
+          $pkg = Get-Content '.gsm-build-v130/work/package.json' -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '1.3.0') { throw "Unexpected version: $($pkg.version)" }
+
+      - name: Bundle JetBrains Mono locally
+        shell: pwsh
+        run: |
+          $fontDir = '.gsm-build-v130/work/src/assets'
+          New-Item -ItemType Directory -Force $fontDir | Out-Null
+          $font = Join-Path $fontDir 'JetBrainsMono.woff2'
+          Invoke-WebRequest 'https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono%5Bwght%5D.woff2' -OutFile $font
+          $bytes = [IO.File]::ReadAllBytes($font)
+          if ($bytes.Length -lt 50000) { throw 'JetBrains Mono download is unexpectedly small' }
+          $sig = [Text.Encoding]::ASCII.GetString($bytes[0..3])
+          if ($sig -ne 'wOF2') { throw "Unexpected font signature: $sig" }
+          New-Item -ItemType Directory -Force '.gsm-build-v130/work/public/licenses' | Out-Null
+          Invoke-WebRequest 'https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/OFL.txt' -OutFile '.gsm-build-v130/work/public/licenses/JetBrainsMono-OFL.txt'
+          Write-Host "Bundled JetBrains Mono: $([math]::Round($bytes.Length / 1KB, 1)) KB"
+
+      - name: Install dependencies
+        working-directory: .gsm-build-v130/work
+        run: npm install --no-audit --no-fund
+
+      - name: Production build smoke test
+        working-directory: .gsm-build-v130/work
+        run: npm run build
+
+      - name: Verify redesigned production assets
+        shell: pwsh
+        run: |
+          $font = Get-ChildItem '.gsm-build-v130/work/dist/assets/JetBrainsMono*.woff2' | Select-Object -First 1
+          if (-not $font) { throw 'Bundled JetBrains Mono not found in dist' }
+          $css = Get-ChildItem '.gsm-build-v130/work/dist/assets/*.css' | Select-Object -First 1
+          if (-not $css) { throw 'Production CSS missing' }
+          $text = Get-Content $css.FullName -Raw
+          if ($text -notmatch '7c3aed|124,58,237') { throw 'Purple redesign tokens missing from CSS' }
+          Write-Host "Production font: $($font.Name) $([math]::Round($font.Length / 1KB, 1)) KB"
+
+      - name: Build portable Windows 7 x86 executable
+        working-directory: .gsm-build-v130/work
+        run: npm run dist:win7:x86
+
+      - name: Verify PE32 executable
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem '.gsm-build-v130/work/release/*.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'Portable EXE was not produced' }
+          $fs = [IO.File]::OpenRead($exe.FullName)
+          $br = New-Object IO.BinaryReader($fs)
+          $fs.Seek(0x3c, [IO.SeekOrigin]::Begin) | Out-Null
+          $pe = $br.ReadInt32()
+          $fs.Seek($pe + 4, [IO.SeekOrigin]::Begin) | Out-Null
+          $machine = $br.ReadUInt16()
+          $br.Close(); $fs.Close()
+          if ($machine -ne 0x014c) { throw ('Expected PE32 i386 machine 0x014c, got 0x{0:X4}' -f $machine) }
+          Write-Host "Built PE32 i386: $($exe.FullName) $([math]::Round($exe.Length / 1MB, 2)) MB"
+          Get-FileHash $exe.FullName -Algorithm SHA256
+
+      - name: Prepare clean source package
+        shell: pwsh
+        run: |
+          $src = '.gsm-build-v130/work'
+          $clean = '.gsm-build-v130/source-ready'
+          Copy-Item $src $clean -Recurse -Force
+          foreach ($name in @('node_modules','dist','release')) {
+            $p = Join-Path $clean $name
+            if (Test-Path $p) { Remove-Item $p -Recurse -Force }
+          }
+          Compress-Archive -Path "$clean/*" -DestinationPath '.gsm-build-v130/GSM_Vedomosti_Desktop_Win7_v1.3.0_Source.zip' -Force
+
+      - name: Upload v1.3.0 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: GSM-Vedomosti-1.3.0-Win7-x86
+          path: |
+            .gsm-build-v130/work/release/*.exe
+            .gsm-build-v130/GSM_Vedomosti_Desktop_Win7_v1.3.0_Source.zip
+          if-no-files-found: error
+          compression-level: 0
