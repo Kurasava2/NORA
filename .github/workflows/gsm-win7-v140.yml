@@ -1,0 +1,143 @@
+name: GSM Win7 v1.4.0 x86 optimized
+
+on:
+  pull_request:
+    branches: [gsm-build-v1-1]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Reconstruct proven v1.2 base
+        shell: pwsh
+        run: |
+          $parts = Get-ChildItem '.gsm-build-v120/chunk*.txt' | Sort-Object Name
+          if ($parts.Count -lt 1) { throw 'v1.2 source chunks not found' }
+          $b64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
+          $zip = "$env:RUNNER_TEMP\gsm-base.zip"
+          [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($b64))
+          New-Item -ItemType Directory -Force '.gsm-build-v140/work' | Out-Null
+          Expand-Archive $zip '.gsm-build-v140/work' -Force
+          if (-not (Test-Path '.gsm-build-v140/work/package.json')) { throw 'Base package.json missing' }
+
+      - name: Apply retained v1.2.1 behavior fixes
+        run: node .gsm-build-v121/patch-v121.cjs .gsm-build-v140/work
+
+      - name: Apply verified v1.3.0 redesign overlay
+        shell: pwsh
+        run: |
+          $parts = Get-ChildItem '.gsm-build-v130/overlay/chunk*.txt' | Sort-Object Name
+          if ($parts.Count -ne 5) { throw "Expected 5 v1.3 overlay chunks, got $($parts.Count)" }
+          $b64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
+          $zip = "$env:RUNNER_TEMP\gsm-v130-overlay.zip"
+          [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($b64))
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne '787874424c7e7f4efb75baa79420bc3b040397235770cbe99911409ab68cc6e5') { throw "v1.3 overlay SHA256 mismatch: $hash" }
+          Expand-Archive $zip '.gsm-build-v140/work' -Force
+
+      - name: Apply v1.4.0 performance overlay
+        shell: pwsh
+        run: |
+          $parts = Get-ChildItem '.gsm-build-v140/overlay/chunk*.txt' | Sort-Object Name
+          if ($parts.Count -ne 7) { throw "Expected 7 v1.4 overlay chunks, got $($parts.Count)" }
+          $sizes = $parts | ForEach-Object { $_.Length }
+          Write-Host "v1.4 chunks: $($sizes -join ', ')"
+          $b64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
+          $zip = "$env:RUNNER_TEMP\gsm-v140-overlay.zip"
+          [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($b64))
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne 'd40c8d95602e7b2947b22b32def625410e7a91e857b69e1fc7d6ef5e73f94786') { throw "v1.4 overlay SHA256 mismatch: $hash" }
+          Expand-Archive $zip '.gsm-build-v140/work' -Force
+          $pkg = Get-Content '.gsm-build-v140/work/package.json' -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '1.4.0') { throw "Unexpected version: $($pkg.version)" }
+          if (-not (Select-String -Path '.gsm-build-v140/work/src/App.jsx' -Pattern 'useProgressiveRows' -Quiet)) { throw 'Progressive list rendering missing' }
+          if (-not (Select-String -Path '.gsm-build-v140/work/src/App.jsx' -Pattern 'performance-mode' -Quiet)) { throw 'Performance mode missing' }
+          if (Select-String -Path '.gsm-build-v140/work/src/App.jsx' -Pattern "from './lib/templateEngine.js'" -Quiet) { throw 'templateEngine must not be statically imported' }
+
+      - name: Bundle JetBrains Mono locally
+        shell: pwsh
+        run: |
+          $fontDir = '.gsm-build-v140/work/src/assets'
+          New-Item -ItemType Directory -Force $fontDir | Out-Null
+          $font = Join-Path $fontDir 'JetBrainsMono.woff2'
+          Invoke-WebRequest 'https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono%5Bwght%5D.woff2' -OutFile $font
+          $bytes = [IO.File]::ReadAllBytes($font)
+          if ($bytes.Length -lt 50000) { throw 'JetBrains Mono download is unexpectedly small' }
+          $sig = [Text.Encoding]::ASCII.GetString($bytes[0..3])
+          if ($sig -ne 'wOF2') { throw "Unexpected font signature: $sig" }
+          New-Item -ItemType Directory -Force '.gsm-build-v140/work/public/licenses' | Out-Null
+          Invoke-WebRequest 'https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/OFL.txt' -OutFile '.gsm-build-v140/work/public/licenses/JetBrainsMono-OFL.txt'
+
+      - name: Install dependencies
+        working-directory: .gsm-build-v140/work
+        run: npm install --no-audit --no-fund
+
+      - name: Production build smoke test
+        working-directory: .gsm-build-v140/work
+        run: npm run build
+
+      - name: Verify optimized production assets
+        shell: pwsh
+        run: |
+          $font = Get-ChildItem '.gsm-build-v140/work/dist/assets/JetBrainsMono*.woff2' | Select-Object -First 1
+          if (-not $font) { throw 'Bundled JetBrains Mono not found in dist' }
+          $css = Get-ChildItem '.gsm-build-v140/work/dist/assets/*.css' | Select-Object -First 1
+          if (-not $css) { throw 'Production CSS missing' }
+          $text = Get-Content $css.FullName -Raw
+          if ($text -notmatch 'performance-mode') { throw 'Performance mode CSS missing from production' }
+          $js = Get-ChildItem '.gsm-build-v140/work/dist/assets/*.js' | Sort-Object Length
+          if ($js.Count -lt 2) { throw 'Expected code-split JS chunks after lazy template engine import' }
+          Write-Host 'Production JS chunks:'
+          $js | ForEach-Object { Write-Host ("  {0}: {1:N1} KB" -f $_.Name, ($_.Length / 1KB)) }
+          Write-Host ("Production font: {0}: {1:N1} KB" -f $font.Name, ($font.Length / 1KB))
+
+      - name: Build portable Windows 7 x86 executable
+        working-directory: .gsm-build-v140/work
+        run: npm run dist:win7:x86
+
+      - name: Verify PE32 executable
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem '.gsm-build-v140/work/release/*.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'Portable EXE was not produced' }
+          $fs = [IO.File]::OpenRead($exe.FullName)
+          $br = New-Object IO.BinaryReader($fs)
+          $fs.Seek(0x3c, [IO.SeekOrigin]::Begin) | Out-Null
+          $pe = $br.ReadInt32()
+          $fs.Seek($pe + 4, [IO.SeekOrigin]::Begin) | Out-Null
+          $machine = $br.ReadUInt16()
+          $br.Close(); $fs.Close()
+          if ($machine -ne 0x014c) { throw ('Expected PE32 i386 machine 0x014c, got 0x{0:X4}' -f $machine) }
+          Write-Host "Built PE32 i386: $($exe.FullName) $([math]::Round($exe.Length / 1MB, 2)) MB"
+          Get-FileHash $exe.FullName -Algorithm SHA256
+
+      - name: Prepare clean source package
+        shell: pwsh
+        run: |
+          $src = '.gsm-build-v140/work'
+          $clean = '.gsm-build-v140/source-ready'
+          Copy-Item $src $clean -Recurse -Force
+          foreach ($name in @('node_modules','dist','release')) {
+            $p = Join-Path $clean $name
+            if (Test-Path $p) { Remove-Item $p -Recurse -Force }
+          }
+          Compress-Archive -Path "$clean/*" -DestinationPath '.gsm-build-v140/GSM_Vedomosti_Desktop_Win7_v1.4.0_Source.zip' -Force
+
+      - name: Upload v1.4.0 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: GSM-Vedomosti-1.4.0-Win7-x86
+          path: |
+            .gsm-build-v140/work/release/*.exe
+            .gsm-build-v140/GSM_Vedomosti_Desktop_Win7_v1.4.0_Source.zip
+          if-no-files-found: error
+          compression-level: 0
