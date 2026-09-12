@@ -1,4 +1,4 @@
-name: GSM Win7 v1.2.1 x86
+name: GSM Win7 v1.2.2 x86
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
     paths:
       - '.gsm-build-v120/**'
       - '.gsm-build-v121/**'
+      - '.gsm-build-v122/**'
       - '.github/workflows/gsm-win7-v120.yml'
   pull_request:
     branches: [gsm-build-v1-1]
@@ -36,6 +37,24 @@ jobs:
       - name: Apply v1.2.1 changes
         run: node .gsm-build-v121/patch-v121.cjs .gsm-build-v120/work
 
+      - name: Apply v1.2.2 local font changes
+        run: node .gsm-build-v122/patch-v122.cjs .gsm-build-v120/work
+
+      - name: Bundle JetBrains Mono locally
+        shell: pwsh
+        run: |
+          $fontDir = '.gsm-build-v120/work/src/assets'
+          New-Item -ItemType Directory -Force $fontDir | Out-Null
+          $font = Join-Path $fontDir 'JetBrainsMono.woff2'
+          Invoke-WebRequest 'https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono%5Bwght%5D.woff2' -OutFile $font
+          $bytes = [IO.File]::ReadAllBytes($font)
+          if ($bytes.Length -lt 50000) { throw 'JetBrains Mono download is unexpectedly small' }
+          $sig = [Text.Encoding]::ASCII.GetString($bytes[0..3])
+          if ($sig -ne 'wOF2') { throw "Unexpected font signature: $sig" }
+          New-Item -ItemType Directory -Force '.gsm-build-v120/work/public/licenses' | Out-Null
+          Invoke-WebRequest 'https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/OFL.txt' -OutFile '.gsm-build-v120/work/public/licenses/JetBrainsMono-OFL.txt'
+          Write-Host "Bundled JetBrains Mono: $([math]::Round($bytes.Length / 1KB, 1)) KB"
+
       - name: Install dependencies
         working-directory: .gsm-build-v120/work
         run: npm install --no-audit --no-fund
@@ -55,7 +74,7 @@ jobs:
       - name: Upload portable executable
         uses: actions/upload-artifact@v4
         with:
-          name: GSM-Vedomosti-1.2.1-Win7-x86
+          name: GSM-Vedomosti-1.2.2-Win7-x86
           path: .gsm-build-v120/work/release/*.exe
           if-no-files-found: error
           compression-level: 0
