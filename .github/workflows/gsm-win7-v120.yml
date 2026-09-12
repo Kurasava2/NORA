@@ -1,10 +1,11 @@
-name: GSM Win7 v1.2.0
+name: GSM Win7 v1.2.1 x86
 
 on:
   push:
     branches: [gsm-build-v1-1]
     paths:
       - '.gsm-build-v120/**'
+      - '.gsm-build-v121/**'
       - '.github/workflows/gsm-win7-v120.yml'
   pull_request:
     branches: [gsm-build-v1-1]
@@ -22,7 +23,7 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Reconstruct source
+      - name: Reconstruct v1.2.0 source
         shell: pwsh
         run: |
           $parts = Get-ChildItem '.gsm-build-v120/chunk*.txt' | Sort-Object Name
@@ -31,15 +32,17 @@ jobs:
           [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\gsm-source.zip", [Convert]::FromBase64String($b64))
           New-Item -ItemType Directory -Force '.gsm-build-v120/work' | Out-Null
           Expand-Archive "$env:RUNNER_TEMP\gsm-source.zip" '.gsm-build-v120/work' -Force
-          Get-ChildItem '.gsm-build-v120/work'
+
+      - name: Apply v1.2.1 changes
+        run: node .gsm-build-v121/patch-v121.cjs .gsm-build-v120/work
 
       - name: Install dependencies
         working-directory: .gsm-build-v120/work
         run: npm install --no-audit --no-fund
 
-      - name: Build portable Windows 7 executable
+      - name: Build portable Windows 7 x86 executable
         working-directory: .gsm-build-v120/work
-        run: npm run dist:win7
+        run: npm run dist:win7:x86
 
       - name: Verify executable
         shell: pwsh
@@ -52,7 +55,7 @@ jobs:
       - name: Upload portable executable
         uses: actions/upload-artifact@v4
         with:
-          name: GSM-Vedomosti-1.2.0-Win7
+          name: GSM-Vedomosti-1.2.1-Win7-x86
           path: .gsm-build-v120/work/release/*.exe
           if-no-files-found: error
           compression-level: 0
