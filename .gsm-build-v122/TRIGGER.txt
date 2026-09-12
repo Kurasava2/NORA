@@ -1,0 +1,1 @@
+build v1.2.2 x86 with local JetBrains Mono
