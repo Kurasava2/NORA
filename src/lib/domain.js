@@ -8,7 +8,7 @@ import { syncCarriedStart } from './carry.js'
 
 export const BASE_VEHICLES = baseVehicles
 export const BASE_CATALOG = baseCatalog
-export const STORAGE_VERSION = 6
+export const STORAGE_VERSION = 7
 export const DEFAULT_SETTINGS = {
   unit: 'Командир автомобильной роты войсковой части 98562',
   rank: 'капитан',
@@ -21,7 +21,7 @@ export const DEFAULT_SETTINGS = {
   preferredPrinter: '',
   performanceMode: true
 }
-export const DEFAULT_STATE = { version: STORAGE_VERSION, settings: DEFAULT_SETTINGS, periods: [], vehicleSettings: {}, catalog: [] }
+export const DEFAULT_STATE = { version: STORAGE_VERSION, settings: DEFAULT_SETTINGS, periods: [], vehicleSettings: {}, vehicles: baseVehicles.map(v => ({...v, defaultMaterials:[...(v.defaultMaterials||[])]})), catalog: baseCatalog.map(m => ({...m, aliases:[...(m.aliases||[])], sourceVehicles:[...(m.sourceVehicles||[])]})) }
 
 export const clone = value => typeof globalThis.structuredClone === 'function' ? globalThis.structuredClone(value) : JSON.parse(JSON.stringify(value))
 export const uid = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 9)}`
@@ -45,14 +45,19 @@ export function presetDates(month,preset){ const [y,mo]=month.split('-').map(Num
 export const sortedPeriods = state => [...state.periods].sort((a,b)=>reportMonthOf(b).localeCompare(reportMonthOf(a))||b.start.localeCompare(a.start))
 
 function normalizeCatalogName(name){ return String(name||'').replace(/^ДТ(?=\s|$)/i,'Дт') }
-export function mergeCatalog(existing=[]){ const map=new Map(); for(const b of BASE_CATALOG){ const x=clone(b); x.name=normalizeCatalogName(x.name); x.aliases=unique([...(x.aliases||[]), b.name]); map.set(x.name.toLowerCase(),x) } for(const e0 of existing){ const e=clone(e0), name=normalizeCatalogName(e.name), k=name.toLowerCase(), cur=map.get(k); map.set(k,cur?{...cur,...e,name,aliases:unique([...(cur.aliases||[]),...(e.aliases||[]),e0.name])}:{...e,name}) } return [...map.values()] }
+export function mergeCatalog(existing=[], includeBase=true){ const map=new Map(); if(includeBase) for(const b of BASE_CATALOG){ const x=clone(b); x.name=normalizeCatalogName(x.name); x.aliases=unique([...(x.aliases||[]), b.name]); map.set(x.name.toLowerCase(),x) } for(const e0 of existing){ const e=clone(e0), name=normalizeCatalogName(e.name), k=name.toLowerCase(), cur=map.get(k); map.set(k,cur?{...cur,...e,name,aliases:unique([...(cur.aliases||[]),...(e.aliases||[]),e0.name])}:{...e,name}) } return [...map.values()] }
 export function migrateState(input) {
-  const s = input && typeof input === 'object' ? clone(input) : clone(DEFAULT_STATE)
+  const source = input && typeof input === 'object' ? input : null
+  const oldVersion = Number(source?.version || 0)
+  const s = source ? clone(source) : clone(DEFAULT_STATE)
   s.version = STORAGE_VERSION
   s.settings = { ...DEFAULT_SETTINGS, ...(s.settings || {}) }
   s.periods = Array.isArray(s.periods) ? s.periods : []
   s.vehicleSettings = s.vehicleSettings || {}
-  s.catalog = mergeCatalog(s.catalog || [])
+  if (Array.isArray(s.vehicles)) s.vehicles = s.vehicles.map(v => ({...v, id:String(v.id || v.shortNo || uid()), shortNo:String(v.shortNo || v.id || ''), model:String(v.model || ''), reg:String(v.reg || ''), defaultMaterials:Array.isArray(v.defaultMaterials)?v.defaultMaterials:[], hasMotohours:!!v.hasMotohours}))
+  else s.vehicles = clone(BASE_VEHICLES).map(v => ({...v, ...(s.vehicleSettings?.[v.id] || {})}))
+  if (oldVersion < 7) s.catalog = mergeCatalog(Array.isArray(s.catalog) ? s.catalog : [], true)
+  else s.catalog = mergeCatalog(Array.isArray(s.catalog) ? s.catalog : [], false)
   for (const p of s.periods) {
     p.reportMonth = p.reportMonth || String(p.end || p.start || '').slice(0, 7)
     p.statements = Array.isArray(p.statements) ? p.statements : []
@@ -77,7 +82,6 @@ export function migrateState(input) {
   return s
 }
 
-const BASE_VEHICLE_BY_ID = new Map(BASE_VEHICLES.map(v=>[v.id,v]))
 const CATALOG_INDEX_CACHE = new WeakMap()
 const PERIOD_ROWS_CACHE = new WeakMap()
 const VEHICLE_HISTORY_CACHE = new WeakMap()
@@ -88,8 +92,8 @@ function catalogIndex(catalog){
   for(const x of catalog||[]){byName.set(x.name,x);for(const a of x.aliases||[])byAlias.set(a,x)}
   idx={byName,byAlias};CATALOG_INDEX_CACHE.set(catalog,idx);return idx
 }
-export const baseVehicle=id=>BASE_VEHICLE_BY_ID.get(id)||null
-export function vehicleOf(state,id){ const b=baseVehicle(id); if(!b)return null; const o=state.vehicleSettings?.[id]; return o?{...b,...o}:b }
+export const baseVehicle=id=>BASE_VEHICLES.find(v=>v.id===id)||null
+export function vehicleOf(state,id){ const list=state?.vehicles; const b=Array.isArray(list)?list.find(v=>v.id===id):baseVehicle(id); if(!b)return null; const o=state.vehicleSettings?.[id]; return o?{...b,...o}:b }
 export function materialOf(state,name){ const normalized=normalizeCatalogName(name),idx=catalogIndex(state.catalog); return idx.byName.get(normalized)||idx.byAlias.get(name)||{name:normalized,category:/^Д[тТ](?=\s|$)/.test(normalized)?'Топливо':'Масло',unit:'л',aliases:[]} }
 export function materialDisplayName(name){ return normalizeCatalogName(name) }
 export function materialCellName(name){ const n=normalizeCatalogName(name); return n.replace(/^Масло\s+/i,'') }
@@ -132,7 +136,6 @@ export function validateStatement(state, st, p) {
       const pe = i > 0 ? num(q?.end) : num(q)
       if (pe !== null && Math.abs(pe) > tol && !t.gsm?.[m]) errors.push(`${tag}: не перенесён остаток ${m} ${nfmt(pe)} л.`)
     }
-    let fuelStart = 0, fuelEnd = 0
     for (const m of mats) {
       const q = t.gsm[m] || {}, s = num(q.start), r = num(q.received), sp = num(q.spent), e = num(q.end)
       if ([s, r, sp, e].every(x => x !== null)) {
@@ -141,12 +144,7 @@ export function validateStatement(state, st, p) {
       }
       const pe = i > 0 ? num(trips[i - 1].gsm?.[m]?.end) : num(st.opening?.gsm?.[m])
       if (pe !== null && Math.abs(pe) > tol && s !== null && Math.abs(s - pe) > tol) errors.push(`${tag}: начальный остаток ${m} не совпадает с предыдущим.`)
-      if (materialOf(state, m).category === 'Топливо') { fuelStart += s || 0; fuelEnd += e || 0 }
       if (t.unused && ((r || 0) !== 0 || (sp || 0) !== 0)) warnings.push(`${tag}: неиспользованная путёвка содержит движение ${m}.`)
-    }
-    if (v?.tankCapacity) {
-      if (fuelStart > v.tankCapacity + tol) warnings.push(`${tag}: топливо перед выездом превышает бак.`)
-      if (fuelEnd > v.tankCapacity + tol) warnings.push(`${tag}: остаток превышает бак.`)
     }
     if (t.unused && !String(t.note || '').toLowerCase().includes('неисп')) warnings.push(`${tag}: добавьте «неиспользованный» в примечание.`)
   })
@@ -158,5 +156,5 @@ export function statementStatus(state,st,p){ const c=validateStatement(state,st,
 export function stStats(state,st){ let km=0,fuel=0; for(const t of st.trips||[]){const a=num(t.odoStart),b=num(t.odoEnd);if(a!==null&&b!==null)km+=b-a;for(const m of tripMaterialNames(t))if(materialOf(state,m).category==='Топливо')fuel+=num(t.gsm?.[m]?.spent)||0}return{trips:st.trips?.length||0,km,fuel} }
 export function totals(st){ const out={}; for(const m of statementMaterialNames(st)){let received=0,spent=0,start=null,end=null;for(const t of st.trips||[]){const q=t.gsm?.[m];if(!q)continue;if(start===null&&num(q.start)!==null)start=num(q.start);received+=num(q.received)||0;spent+=num(q.spent)||0;if(num(q.end)!==null)end=num(q.end)}out[m]={start:start??0,received,spent,end:end??0}}return out }
 export function lastBalances(st){ const t=st.trips?.[st.trips.length-1]; const out={}; for(const m of tripMaterialNames(t)){const e=num(t.gsm?.[m]?.end);if(e!==null&&Math.abs(e)>1e-9)out[m]=e}return out }
-export function periodFleetRows(state,p){ let cache=PERIOD_ROWS_CACHE.get(state);if(!cache){cache=new WeakMap();PERIOD_ROWS_CACHE.set(state,cache)}const hit=cache.get(p);if(hit)return hit;const byVehicle=new Map((p.statements||[]).map(st=>[st.vehicleId,st]));const rows=BASE_VEHICLES.map(base=>{const v=vehicleOf(state,base.id),st=byVehicle.get(base.id);if(!st)return{vehicle:v,statement:null,status:{key:'idle',label:'Не ездила',tone:'ok'},stats:{trips:0,km:0,fuel:0}};return{vehicle:v,statement:st,status:statementStatus(state,st,p),stats:stStats(state,st)}});cache.set(p,rows);return rows }
+export function periodFleetRows(state,p){ let cache=PERIOD_ROWS_CACHE.get(state);if(!cache){cache=new WeakMap();PERIOD_ROWS_CACHE.set(state,cache)}const hit=cache.get(p);if(hit)return hit;const byVehicle=new Map((p.statements||[]).map(st=>[st.vehicleId,st]));const rows=(state.vehicles||[]).map(base=>{const v=vehicleOf(state,base.id),st=byVehicle.get(base.id);if(!st)return{vehicle:v,statement:null,status:{key:'idle',label:'Не ездила',tone:'ok'},stats:{trips:0,km:0,fuel:0}};return{vehicle:v,statement:st,status:statementStatus(state,st,p),stats:stStats(state,st)}});cache.set(p,rows);return rows }
 export function vehicleHistory(state,id){let cache=VEHICLE_HISTORY_CACHE.get(state);if(!cache){cache=new Map();VEHICLE_HISTORY_CACHE.set(state,cache)}if(cache.has(id))return cache.get(id);const rows=[];for(const p of sortedPeriods(state)){const st=(p.statements||[]).find(s=>s.vehicleId===id);if(st)rows.push({period:p,statement:st,status:statementStatus(state,st,p),stats:stStats(state,st),balances:lastBalances(st)})}cache.set(id,rows);return rows }
