@@ -1,0 +1,94 @@
+name: GSM v1.4.0 audited Win7 x86 RC
+
+on:
+  push:
+    branches:
+      - gsm-rc-v140-audited
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout audited source
+        uses: actions/checkout@v4
+
+      - name: Setup Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: npm
+
+      - name: Verify package lock
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '1.4.0') { throw "Unexpected app version: $($pkg.version)" }
+          if ($pkg.devDependencies.electron -ne '22.3.27') { throw "Electron must stay pinned to 22.3.27 for Windows 7 compatibility" }
+          if (Select-String -Path package-lock.json -Pattern '"@iarna/toml"' -Quiet) { throw 'Legacy TOML dependency is still present' }
+
+      - name: Install exact dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run backup regression tests
+        run: npm test
+
+      - name: Production web build smoke test
+        run: npm run build
+
+      - name: Build portable Windows 7 x86 executable
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist:win7:x86
+
+      - name: Verify PE32 i386 and create checksums
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem 'release/*.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'Portable EXE was not produced' }
+
+          $fs = [IO.File]::OpenRead($exe.FullName)
+          $br = New-Object IO.BinaryReader($fs)
+          $fs.Seek(0x3c, [IO.SeekOrigin]::Begin) | Out-Null
+          $peOffset = $br.ReadInt32()
+          $fs.Seek($peOffset + 4, [IO.SeekOrigin]::Begin) | Out-Null
+          $machine = $br.ReadUInt16()
+          $br.Close()
+          $fs.Close()
+
+          if ($machine -ne 0x014c) {
+            throw ('Expected PE32 i386 machine 0x014c, got 0x{0:X4}' -f $machine)
+          }
+
+          $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($exe.Name)" | Set-Content -Encoding ascii 'release/SHA256SUMS.txt'
+          Write-Host "Verified PE32 i386: $($exe.Name)"
+          Write-Host "SHA256: $hash"
+
+      - name: Prepare clean audited source archive
+        shell: pwsh
+        run: |
+          $clean = Join-Path $env:RUNNER_TEMP 'GSM-v1.4.0-audited-source'
+          New-Item -ItemType Directory -Force $clean | Out-Null
+          Get-ChildItem -Force | Where-Object {
+            $_.Name -notin @('.git', '.github', 'node_modules', 'dist', 'release')
+          } | ForEach-Object {
+            Copy-Item $_.FullName -Destination $clean -Recurse -Force
+          }
+          Compress-Archive -Path "$clean/*" -DestinationPath 'release/GSM_v1.4.0_Audited_Source_gsmbackup_only.zip' -Force
+
+      - name: Upload RC artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: GSM-Vedomosti-1.4.0-Audited-Win7-x86-RC
+          path: |
+            release/*.exe
+            release/SHA256SUMS.txt
+            release/GSM_v1.4.0_Audited_Source_gsmbackup_only.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30

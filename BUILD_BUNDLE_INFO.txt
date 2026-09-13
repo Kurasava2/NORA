@@ -1,0 +1,4 @@
+Temporary build branch: gsm-rc-v140-audited
+Purpose: build GSM Vedomosti v1.4.0 audited source as a portable Windows 7 x86 (PE32 i386) executable.
+This branch is intentionally independent from NORA main and must never be merged into main.
+Backup format in this source: .gsmbackup only.
