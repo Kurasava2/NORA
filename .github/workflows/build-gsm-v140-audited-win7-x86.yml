@@ -38,10 +38,10 @@ jobs:
         shell: pwsh
         run: |
           $pkg = Get-Content package.json -Raw | ConvertFrom-Json
-          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json
+          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
           if ($pkg.version -ne '1.4.1') { throw "Unexpected app version: $($pkg.version)" }
-          if ($lock.version -ne '1.4.1') { throw "Unexpected lock version: $($lock.version)" }
-          if ($lock.packages.''.version -ne '1.4.1') { throw "Unexpected root lock package version: $($lock.packages.''.version)" }
+          if ($lock['version'] -ne '1.4.1') { throw "Unexpected lock version: $($lock['version'])" }
+          if ($lock['packages']['']['version'] -ne '1.4.1') { throw "Unexpected root lock package version: $($lock['packages']['']['version'])" }
           if ($pkg.devDependencies.electron -ne '22.3.27') { throw "Electron must stay pinned to 22.3.27 for Windows 7 compatibility" }
           if (Select-String -Path package-lock.json -Pattern '"@iarna/toml"' -Quiet) { throw 'Legacy TOML dependency is still present' }
 
