@@ -3,7 +3,7 @@ name: GSM v1.4.1 audited Win7 x86 RC
 on:
   push:
     branches:
-      - gsm-rc-v140-audited
+      - gsm-v141-stage
 
 permissions:
   contents: read
@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Checkout audited source
+      - name: Checkout v1.4.1 stage
         uses: actions/checkout@v4
 
       - name: Setup Node 18
@@ -23,11 +23,25 @@ jobs:
           node-version: '18'
           cache: npm
 
+      - name: Apply v1.4.1 source patch
+        shell: pwsh
+        run: |
+          $parts = Get-ChildItem '.ci/apply-v141.part*.b64' | Sort-Object Name
+          if ($parts.Count -ne 4) { throw "Expected 4 patch payload parts, got $($parts.Count)" }
+          $b64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
+          [IO.File]::WriteAllBytes('.ci/apply-v141.cjs.gz', [Convert]::FromBase64String($b64))
+          node -e "const fs=require('fs'),z=require('zlib');fs.writeFileSync('.ci/apply-v141.cjs',z.gunzipSync(fs.readFileSync('.ci/apply-v141.cjs.gz')))"
+          node .ci/apply-v141.cjs
+          Remove-Item '.ci' -Recurse -Force
+
       - name: Verify package lock
         shell: pwsh
         run: |
           $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json
           if ($pkg.version -ne '1.4.1') { throw "Unexpected app version: $($pkg.version)" }
+          if ($lock.version -ne '1.4.1') { throw "Unexpected lock version: $($lock.version)" }
+          if ($lock.packages.''.version -ne '1.4.1') { throw "Unexpected root lock package version: $($lock.packages.''.version)" }
           if ($pkg.devDependencies.electron -ne '22.3.27') { throw "Electron must stay pinned to 22.3.27 for Windows 7 compatibility" }
           if (Select-String -Path package-lock.json -Pattern '"@iarna/toml"' -Quiet) { throw 'Legacy TOML dependency is still present' }
 
@@ -75,7 +89,7 @@ jobs:
           $clean = Join-Path $env:RUNNER_TEMP 'GSM-v1.4.1-audited-source'
           New-Item -ItemType Directory -Force $clean | Out-Null
           Get-ChildItem -Force | Where-Object {
-            $_.Name -notin @('.git', '.github', 'node_modules', 'dist', 'release')
+            $_.Name -notin @('.git', '.github', '.ci', 'node_modules', 'dist', 'release')
           } | ForEach-Object {
             Copy-Item $_.FullName -Destination $clean -Recurse -Force
           }
