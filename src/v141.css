@@ -1,0 +1,32 @@
+/* v1.4.1 — compact year/month timeline */
+.year-sections{display:grid;gap:16px}
+.year-section{display:block;border:1px solid #202a39;border-radius:12px;background:rgba(10,15,25,.58);overflow:hidden}
+.year-section>summary{list-style:none;cursor:pointer;user-select:none}
+.year-section>summary::-webkit-details-marker{display:none}
+.year-heading{position:static;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:16px;padding:13px 15px;border-bottom:1px solid transparent;background:#0d1420}
+.year-section[open]>.year-heading{border-bottom-color:#202a39}
+.year-heading-main{display:flex;align-items:baseline;gap:10px;min-width:0}
+.year-heading strong{font-size:18px;color:#d1d5db;letter-spacing:-.02em}
+.year-heading small{margin:0;color:#7f8a9b;font-size:10px}
+.year-chevron{align-self:center;color:#8b5cf6;font-size:13px;transition:transform .15s}
+.year-section:not([open]) .year-chevron{transform:rotate(-90deg)}
+.year-heading .btn{margin:0}
+.period-list{display:grid;gap:8px;padding:10px}
+.period-row-card{display:flex;align-items:stretch;min-width:0;overflow:hidden;padding:0;background:#101722}
+.period-row-card:hover{border-color:#374151;background:#141d2b}
+.period-row-open{appearance:none;display:grid;grid-template-columns:minmax(180px,1fr) minmax(390px,1.6fr) auto;align-items:center;gap:20px;min-width:0;flex:1;border:0;background:transparent;color:inherit;padding:13px 14px 13px 19px;text-align:left;cursor:pointer}
+.period-row-open:hover{background:rgba(31,41,55,.38)}
+.period-row-title{min-width:0}
+.period-row-title h3{margin:0;color:#f3f4f6;font-size:14px;font-weight:720}
+.period-row-title p{margin:4px 0 0;color:#7e8999;font-size:10px}
+.period-row-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0}
+.period-row-metrics>span{display:flex;flex-direction:column;gap:2px;min-width:0;padding-left:10px;border-left:1px solid #263142}
+.period-row-metrics b{overflow:hidden;text-overflow:ellipsis;color:#d5dbe5;font-size:10px;white-space:nowrap}
+.period-row-metrics small{color:#6f7b8d;font-size:9px;white-space:nowrap}
+.period-row-status{display:flex;align-items:center;justify-content:flex-end;gap:9px;white-space:nowrap}
+.period-row-arrow{color:#8b5cf6;font-size:24px;line-height:1}
+.period-row-delete{align-self:center;margin-right:10px}
+.performance-mode .year-section,.performance-mode .period-row-card{contain:layout paint style}
+.performance-mode .period-row-open,.performance-mode .year-chevron{transition:none!important}
+@media(max-width:1180px){.period-row-open{grid-template-columns:minmax(170px,.8fr) minmax(310px,1.5fr) auto;gap:12px}.period-row-metrics b{font-size:9.5px}}
+@media(max-width:900px){.period-row-open{grid-template-columns:1fr auto;gap:10px}.period-row-metrics{grid-column:1/-1;grid-row:2;grid-template-columns:repeat(3,1fr)}.period-row-status{grid-column:2;grid-row:1}.period-row-delete{margin-right:7px}}
