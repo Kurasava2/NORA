@@ -1,4 +1,4 @@
-name: GSM v1.4.2 Win7 x86 RC
+name: GSM capture v1.4.1 staging baseline
 
 on:
   push:
@@ -10,21 +10,19 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  capture:
     runs-on: windows-2022
-    timeout-minutes: 35
-
+    timeout-minutes: 10
     steps:
-      - name: Checkout v1.4.2 stage
+      - name: Checkout stage
         uses: actions/checkout@v4
 
       - name: Setup Node 18
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: npm
 
-      - name: Restore audited v1.4.1 source
+      - name: Restore exact staged v1.4.1 source
         shell: pwsh
         run: |
           $parts = Get-ChildItem '.ci/apply-v141.part*.b64' | Sort-Object Name
@@ -33,82 +31,20 @@ jobs:
           [IO.File]::WriteAllBytes('.ci/apply-v141.cjs.gz', [Convert]::FromBase64String($b64))
           node -e "const fs=require('fs'),z=require('zlib');fs.writeFileSync('.ci/apply-v141.cjs',z.gunzipSync(fs.readFileSync('.ci/apply-v141.cjs.gz')))"
           node .ci/apply-v141.cjs
-
-      - name: Apply exact v1.4.2 code patch
-        shell: pwsh
-        run: |
-          $parts = Get-ChildItem '.ci/v142-code.part*.b64' | Sort-Object Name
-          if ($parts.Count -ne 6) { throw "Expected 6 v1.4.2 patch parts, got $($parts.Count)" }
-          $b64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
-          [IO.File]::WriteAllBytes('.ci/v142-code.patch.gz', [Convert]::FromBase64String($b64))
-          $hash = (Get-FileHash '.ci/v142-code.patch.gz' -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($hash -ne '0aa05c1357cecae5faf43cf2155944d418cd2a5b013a951cb5ae0075ae1b5a3e') { throw "v1.4.2 patch checksum mismatch: $hash" }
-          node -e "const fs=require('fs'),z=require('zlib');fs.writeFileSync('.ci/v142-code.patch',z.gunzipSync(fs.readFileSync('.ci/v142-code.patch.gz')))"
-          git apply --check -p1 .ci/v142-code.patch
-          git apply -p1 .ci/v142-code.patch
-
-      - name: Set and verify v1.4.2 release metadata
-        shell: pwsh
-        run: |
-          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json'));p.version='1.4.2';fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');const l=JSON.parse(fs.readFileSync('package-lock.json'));l.version='1.4.2';l.packages[''].version='1.4.2';fs.writeFileSync('package-lock.json',JSON.stringify(l,null,2)+'\n')"
-          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
-          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
-          if ($pkg.version -ne '1.4.2') { throw "Unexpected app version: $($pkg.version)" }
-          if ($lock['version'] -ne '1.4.2') { throw "Unexpected lock version: $($lock['version'])" }
-          if ($lock['packages']['']['version'] -ne '1.4.2') { throw "Unexpected root lock package version: $($lock['packages']['']['version'])" }
-          if ($pkg.devDependencies.electron -ne '22.3.27') { throw 'Electron must stay pinned to 22.3.27 for Windows 7 compatibility' }
-          if ($pkg.dependencies.'@iarna/toml' -ne '2.2.5') { throw 'Expected @iarna/toml 2.2.5 for legacy backup import' }
           Remove-Item '.ci' -Recurse -Force
 
-      - name: Install exact dependencies
-        run: npm ci --no-audit --no-fund
-
-      - name: Run regression tests
-        run: npm test
-
-      - name: Production web build smoke test
-        run: npm run build
-
-      - name: Build portable Windows 7 x86 executable
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npm run dist:win7:x86
-
-      - name: Verify PE32 i386 and create checksum
+      - name: Pack exact baseline
         shell: pwsh
         run: |
-          $exe = Get-Item 'release/GSM-Vedomosti-1.4.2-portable-Win7-ia32.exe'
-          $fs = [IO.File]::OpenRead($exe.FullName)
-          $br = New-Object IO.BinaryReader($fs)
-          $fs.Seek(0x3c, [IO.SeekOrigin]::Begin) | Out-Null
-          $peOffset = $br.ReadInt32()
-          $fs.Seek($peOffset + 4, [IO.SeekOrigin]::Begin) | Out-Null
-          $machine = $br.ReadUInt16()
-          $br.Close(); $fs.Close()
-          if ($machine -ne 0x014c) { throw ('Expected PE32 i386 0x014c, got 0x{0:X4}' -f $machine) }
-          $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  $($exe.Name)" | Set-Content -Encoding ascii 'release/SHA256SUMS.txt'
-          Write-Host "Verified PE32/i386: $($exe.Name)"
-          Write-Host "SHA256: $hash"
+          $out = Join-Path $env:RUNNER_TEMP 'GSM-v141-baseline.zip'
+          Get-ChildItem -Force | Where-Object { $_.Name -notin @('.git','.github') } | Compress-Archive -DestinationPath $out -Force
+          Copy-Item $out 'GSM-v141-baseline.zip'
 
-      - name: Prepare clean v1.4.2 source archive
-        shell: pwsh
-        run: |
-          $clean = Join-Path $env:RUNNER_TEMP 'GSM-v1.4.2-source'
-          New-Item -ItemType Directory -Force $clean | Out-Null
-          Get-ChildItem -Force | Where-Object { $_.Name -notin @('.git','.github','.ci','node_modules','dist','release') } | ForEach-Object {
-            Copy-Item $_.FullName -Destination $clean -Recurse -Force
-          }
-          Compress-Archive -Path "$clean/*" -DestinationPath 'release/GSM_v1.4.2_RC_Source.zip' -Force
-
-      - name: Upload v1.4.2 artifacts
+      - name: Upload exact baseline
         uses: actions/upload-artifact@v4
         with:
-          name: GSM-Vedomosti-1.4.2-Win7-x86-RC
-          path: |
-            release/GSM-Vedomosti-1.4.2-portable-Win7-ia32.exe
-            release/SHA256SUMS.txt
-            release/GSM_v1.4.2_RC_Source.zip
+          name: GSM-v141-exact-baseline
+          path: GSM-v141-baseline.zip
           if-no-files-found: error
           compression-level: 0
-          retention-days: 30
+          retention-days: 1
