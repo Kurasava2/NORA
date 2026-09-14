@@ -1,0 +1,9 @@
+const test=require('node:test')
+const assert=require('node:assert/strict')
+async function api(){return import('../src/lib/vehicles.js')}
+test('норма л/моточас автоматически включает учёт моточасов',async()=>{const {normalizeCustomVehicles,vehicleRateLabel}=await api();const [v]=normalizeCustomVehicles([{id:'custom_x',shortNo:'9001',model:'Тест',reg:'9001АА',baseRate:'12,5',rateUnit:'lMotohour',hasMotohours:false}]);assert.equal(v.baseRate,12.5);assert.equal(v.hasMotohours,true);assert.equal(vehicleRateLabel(v),'л/моточас')})
+test('пользовательская машина входит в общий список',async()=>{const {allVehiclesFrom}=await api();const base=[{id:'base',shortNo:'1',model:'База',reg:'1АА'}];const state={vehicleSettings:{},customVehicles:[{id:'custom_x',shortNo:'9001',model:'Тест',reg:'9001АА',rateUnit:'l100km'}]};assert.equal(allVehiclesFrom(base,state).length,2)})
+test('моточасы считаются как показание после минус до, legacy значение тоже читается',async()=>{const {motohoursWorked}=await api();assert.equal(motohoursWorked({motohourStart:100,motohourEnd:103.5}),3.5);assert.equal(motohoursWorked({motohours:4.25}),4.25)})
+test('пользовательские значения очищаются и нормализуются',async()=>{const {normalizeCustomVehicles}=await api();const [v]=normalizeCustomVehicles([{shortNo:' 9001 ',model:' Тест ',reg:' 9001АА ',baseRate:'10',tankCapacity:'350'}],()=> 'custom_generated');assert.equal(v.id,'custom_generated');assert.equal(v.shortNo,'9001');assert.equal(v.model,'Тест');assert.equal(v.reg,'9001АА');assert.equal(v.rateUnit,'l100km')})
+
+test('конечные моточасы переносятся в следующую путёвку',async()=>{const {carriedMotohourReading}=await api();assert.equal(carriedMotohourReading({motohourEnd:505},null),505);assert.equal(carriedMotohourReading(null,{motohours:400}),400);assert.equal(carriedMotohourReading(null,null),'')})
