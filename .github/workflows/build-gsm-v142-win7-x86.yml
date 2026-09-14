@@ -1,50 +1,13 @@
-name: GSM capture v1.4.1 staging baseline
+name: GSM v1.4.2 staging maintenance
 
 on:
-  push:
-    branches:
-      - gsm-v142-stage
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  capture:
-    runs-on: windows-2022
-    timeout-minutes: 10
+  idle:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout stage
-        uses: actions/checkout@v4
-
-      - name: Setup Node 18
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Restore exact staged v1.4.1 source
-        shell: pwsh
-        run: |
-          $parts = Get-ChildItem '.ci/apply-v141.part*.b64' | Sort-Object Name
-          if ($parts.Count -ne 4) { throw "Expected 4 v1.4.1 payload parts, got $($parts.Count)" }
-          $b64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
-          [IO.File]::WriteAllBytes('.ci/apply-v141.cjs.gz', [Convert]::FromBase64String($b64))
-          node -e "const fs=require('fs'),z=require('zlib');fs.writeFileSync('.ci/apply-v141.cjs',z.gunzipSync(fs.readFileSync('.ci/apply-v141.cjs.gz')))"
-          node .ci/apply-v141.cjs
-          Remove-Item '.ci' -Recurse -Force
-
-      - name: Pack exact baseline
-        shell: pwsh
-        run: |
-          $out = Join-Path $env:RUNNER_TEMP 'GSM-v141-baseline.zip'
-          Get-ChildItem -Force | Where-Object { $_.Name -notin @('.git','.github') } | Compress-Archive -DestinationPath $out -Force
-          Copy-Item $out 'GSM-v141-baseline.zip'
-
-      - name: Upload exact baseline
-        uses: actions/upload-artifact@v4
-        with:
-          name: GSM-v141-exact-baseline
-          path: GSM-v141-baseline.zip
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 1
+      - run: echo "Staging exact v1.4.2 overlay; automatic build temporarily paused."
