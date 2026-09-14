@@ -1,0 +1,7 @@
+Temporary build branch: gsm-v150-stage
+Purpose: build GSM Vedomosti v1.5.0 from the verified corrected v1.4.2 UI/refactor source as a portable Windows 7 x86 (PE32 i386) executable.
+This branch is intentionally independent from NORA main and must never be merged into main.
+Backup format: .gsmbackup only; backupFormatVersion remains 1.
+Data schema: 9.
+Base source: verified GSM Vedomosti v1.4.2 CORRECTED build, itself based on the successful v1.4.1 UI/refactor artifact.
+Major feature: per-vehicle safe formula engine and automatic material consumption allocation with manual override.
