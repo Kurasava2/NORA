@@ -126,20 +126,10 @@ export default function DecodingsView({ state, mutate, notify, confirmAction }) 
         actions={document && <Button onClick={refreshDocument}>Обновить из ведомостей</Button>}
       />
       <div className="decoding-toolbar">
-        <select
-          className="select"
-          value={period?.id || ''}
-          onChange={event => setPeriodId(event.target.value)}
-        >
-          {periods.map(item => (
-            <option key={item.id} value={item.id}>{periodDisplayName(item)}</option>
-          ))}
+        <select className="select" value={period?.id || ''} onChange={event => setPeriodId(event.target.value)}>
+          {periods.map(item => <option key={item.id} value={item.id}>{periodDisplayName(item)}</option>)}
         </select>
-        {!document && (
-          <Button primary onClick={createDocument} disabled={!period}>
-            Сформировать из ведомостей
-          </Button>
-        )}
+        {!document && <Button primary onClick={createDocument} disabled={!period}>Сформировать из ведомостей</Button>}
         {sourceStale && <Badge tone="warn">ведомости изменены</Badge>}
       </div>
       {document && (
@@ -150,62 +140,25 @@ export default function DecodingsView({ state, mutate, notify, confirmAction }) 
             <Kpi value={stats.densities} label="плотностей" />
             <Kpi value={stats.errors} label="ошибок" tone={stats.errors ? 'bad' : 'ok'} />
           </div>
-          <DecodingMaterialCards
-            decodingState={state.decoding}
-            document={document}
-            selected={selectedMaterial}
-            onSelect={setSelectedMaterial}
-          />
+          <DecodingMaterialCards decodingState={state.decoding} document={document} selected={selectedMaterial} onSelect={setSelectedMaterial} />
           {selectedMaterial && (
             <div className="decoding-workspace">
               <div className="decoding-actions">
                 <Button primary onClick={runAuto}>Распределить автоматически FIFO</Button>
                 <Button onClick={() => setLotModalOpen(true)}>＋ Добавить партию</Button>
               </div>
-              <DecodingLots
-                decodingState={state.decoding}
-                materialName={selectedMaterial}
-                onAddLot={() => setLotModalOpen(true)}
-              />
-              <DecodingSourceTable
-                decodingState={state.decoding}
-                document={document}
-                materialName={selectedMaterial}
-                onEdit={setAllocationRow}
-              />
+              <DecodingLots decodingState={state.decoding} materialName={selectedMaterial} onAddLot={() => setLotModalOpen(true)} />
+              <DecodingSourceTable decodingState={state.decoding} document={document} materialName={selectedMaterial} onEdit={setAllocationRow} />
             </div>
           )}
           {!!validation.errors.length && (
-            <div className="form-errors decoding-errors">
-              {validation.errors.slice(0, 12).map(error => <div key={error}>{error}</div>)}
-            </div>
+            <div className="form-errors decoding-errors">{validation.errors.slice(0, 12).map(error => <div key={error}>{error}</div>)}</div>
           )}
         </>
       )}
-      {!document && period && (
-        <div className="empty decoding-empty">
-          <b>Расшифровка ещё не создана</b>
-          <span>
-            Сформируйте её из уже заполненных автомобильных ведомостей за {periodDisplayName(period)}.
-          </span>
-        </div>
-      )}
-      <DensityLotModal
-        open={lotModalOpen}
-        onClose={() => setLotModalOpen(false)}
-        period={period}
-        materialName={selectedMaterial}
-        onSave={addLot}
-        notify={notify}
-      />
-      <AllocationModal
-        open={Boolean(allocationRow)}
-        onClose={() => setAllocationRow(null)}
-        decodingState={state.decoding}
-        document={document}
-        row={allocationRow}
-        onSave={saveManualAllocation}
-      />
+      {!document && period && <div className="empty decoding-empty"><b>Расшифровка ещё не создана</b><span>Сформируйте её из уже заполненных автомобильных ведомостей за {periodDisplayName(period)}.</span></div>}
+      <DensityLotModal open={lotModalOpen} onClose={() => setLotModalOpen(false)} period={period} materialName={selectedMaterial} onSave={addLot} notify={notify} />
+      <AllocationModal open={Boolean(allocationRow)} onClose={() => setAllocationRow(null)} decodingState={state.decoding} document={document} row={allocationRow} onSave={saveManualAllocation} />
     </div>
   )
 }
