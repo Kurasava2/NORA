@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { addTripMaterial, smartBalance } from '../../lib/domain.js'
 
 const EMPTY_MATERIAL_ENTRY = {
@@ -14,7 +14,7 @@ const EMPTY_MATERIAL_ENTRY = {
 export default function useTripMaterials({ state, statement, editingId, form, setForm }) {
   const [materialPick, setMaterialPick] = useState('')
 
-  const setMaterialValue = (materialName, fieldName, value) => {
+  const setMaterialValue = useCallback((materialName, fieldName, value) => {
     setForm(previousForm => {
       const materialEntry = {
         ...(previousForm.gsm?.[materialName] || EMPTY_MATERIAL_ENTRY),
@@ -50,9 +50,9 @@ export default function useTripMaterials({ state, statement, editingId, form, se
         gsm: { ...previousForm.gsm, [materialName]: materialEntry },
       }
     })
-  }
+  }, [setForm])
 
-  const addMaterial = () => {
+  const addMaterial = useCallback(() => {
     if (!materialPick) return
     setForm(previousForm =>
       addTripMaterial(
@@ -64,27 +64,29 @@ export default function useTripMaterials({ state, statement, editingId, form, se
       ),
     )
     setMaterialPick('')
-  }
+  }, [editingId, materialPick, setForm, state, statement])
 
-  const removeMaterial = materialName => {
+  const removeMaterial = useCallback(materialName => {
     setForm(previousForm => {
       const gsm = { ...(previousForm.gsm || {}) }
       delete gsm[materialName]
       return { ...previousForm, gsm }
     })
-  }
+  }, [setForm])
 
-  const availableMaterials = useMemo(
-    () =>
-      state.catalog
-        .filter(material => !form.gsm?.[material.name])
-        .sort(
-          (leftMaterial, rightMaterial) =>
-            leftMaterial.category.localeCompare(rightMaterial.category) ||
-            leftMaterial.name.localeCompare(rightMaterial.name),
-        ),
-    [state.catalog, form.gsm],
-  )
+  const materialNamesKey = Object.keys(form.gsm || {}).join('\u0000')
+  const availableMaterials = useMemo(() => {
+    const usedMaterialNames = new Set(materialNamesKey ? materialNamesKey.split('\u0000') : [])
+    return state.catalog
+      .filter(material => !usedMaterialNames.has(material.name))
+      .sort(
+        (leftMaterial, rightMaterial) =>
+          leftMaterial.category.localeCompare(rightMaterial.category) ||
+          leftMaterial.name.localeCompare(rightMaterial.name),
+      )
+  }, [state.catalog, materialNamesKey])
+
+  const resetMaterialPick = useCallback(() => setMaterialPick(''), [])
 
   return {
     materialPick,
@@ -93,6 +95,6 @@ export default function useTripMaterials({ state, statement, editingId, form, se
     addMaterial,
     removeMaterial,
     availableMaterials,
-    resetMaterialPick: () => setMaterialPick(''),
+    resetMaterialPick,
   }
 }
