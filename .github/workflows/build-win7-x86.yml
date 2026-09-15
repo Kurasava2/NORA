@@ -51,8 +51,8 @@ jobs:
             throw 'Unable to read STORAGE_VERSION from src/lib/domain/defaults.js'
           }
           $schemaVersion = [int]$schemaMatch.Groups[1].Value
-          if ($schemaVersion -ne 9) {
-            throw "Expected data schema 9, got $schemaVersion"
+          if ($schemaVersion -ne 10) {
+            throw "Expected data schema 10, got $schemaVersion"
           }
 
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
