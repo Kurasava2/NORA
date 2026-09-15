@@ -54,6 +54,8 @@ export default function useTripAutoCalculation({
         if (rule.allocation === ALLOC_NONE) continue
 
         for (const allocation of rule.allocations) {
+          if (allocation.locked) continue
+
           const spentValue = num(allocation.spent) || 0
           if (
             spentValue <= toleranceOf(state.settings.tolerance) &&
