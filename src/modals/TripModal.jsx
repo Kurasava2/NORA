@@ -102,6 +102,7 @@ export default function TripModal({
       extraWide
       title={editingId ? `Путёвка №${trip?.number || '—'}` : 'Новая путёвка'}
       subtitle={`${vehicle.model} · ${vehicle.shortNo}`}
+      backdropClassName="trip-modal-backdrop"
     >
       <form onSubmit={actions.saveTrip} className="trip-modal-form">
         <div className="trip-modal-body">
