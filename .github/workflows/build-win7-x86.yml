@@ -1,0 +1,122 @@
+name: Build Windows 7 x86
+
+on:
+  push:
+    branches:
+      - main
+      - 'gsm-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: windows-2022
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: npm
+
+      - name: Read and verify release metadata
+        id: meta
+        shell: pwsh
+        run: |
+          $package = Get-Content package.json -Raw | ConvertFrom-Json
+          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
+          $version = $package.version
+
+          if ($lock['version'] -ne $version) {
+            throw "package-lock version $($lock['version']) differs from package version $version"
+          }
+          if ($lock['packages']['']['version'] -ne $version) {
+            throw "package-lock root package version differs from package version $version"
+          }
+          if ($package.devDependencies.electron -ne '22.3.27') {
+            throw "Electron must stay pinned to 22.3.27 for Windows 7"
+          }
+          $schemaSource = Get-Content 'src/lib/domain/defaults.js' -Raw
+          $schemaMatch = [regex]::Match(
+            $schemaSource,
+            'export\s+const\s+STORAGE_VERSION\s*=\s*(\d+)'
+          )
+          if (-not $schemaMatch.Success) {
+            throw 'Unable to read STORAGE_VERSION from src/lib/domain/defaults.js'
+          }
+          $schemaVersion = [int]$schemaMatch.Groups[1].Value
+          if ($schemaVersion -ne 9) {
+            throw "Expected data schema 9, got $schemaVersion"
+          }
+
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Install exact dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run regression and architecture tests
+        run: npm test
+
+      - name: Build portable Windows 7 x86
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist:win7:x86
+
+      - name: Verify PE32 i386 and write SHA-256
+        shell: pwsh
+        run: |
+          $version = '${{ steps.meta.outputs.version }}'
+          $exePath = "release/GSM-Vedomosti-$version-portable-Win7-ia32.exe"
+          if (-not (Test-Path $exePath)) {
+            throw "Expected executable not found: $exePath"
+          }
+
+          $stream = [IO.File]::OpenRead($exePath)
+          $reader = New-Object IO.BinaryReader($stream)
+          $stream.Seek(0x3c, [IO.SeekOrigin]::Begin) | Out-Null
+          $peOffset = $reader.ReadInt32()
+          $stream.Seek($peOffset + 4, [IO.SeekOrigin]::Begin) | Out-Null
+          $machine = $reader.ReadUInt16()
+          $reader.Close()
+          $stream.Close()
+
+          if ($machine -ne 0x014c) {
+            throw ('Expected PE32/i386 machine 0x014c, got 0x{0:X4}' -f $machine)
+          }
+
+          $hash = (Get-FileHash $exePath -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $(Split-Path $exePath -Leaf)" | Set-Content -Encoding ascii 'release/SHA256SUMS.txt'
+
+      - name: Create clean source ZIP
+        shell: pwsh
+        run: |
+          $version = '${{ steps.meta.outputs.version }}'
+          $cleanSource = Join-Path $env:RUNNER_TEMP "GSM-v$version-source"
+          New-Item -ItemType Directory -Force $cleanSource | Out-Null
+
+          Get-ChildItem -Force | Where-Object {
+            $_.Name -notin @('.git', 'node_modules', 'dist', 'release')
+          } | ForEach-Object {
+            Copy-Item $_.FullName -Destination $cleanSource -Recurse -Force
+          }
+
+          Compress-Archive -Path "$cleanSource/*" `
+            -DestinationPath "release/GSM_v$version_Source_GitHub.zip" -Force
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GSM-Vedomosti-${{ steps.meta.outputs.version }}-Win7-x86
+          path: |
+            release/GSM-Vedomosti-${{ steps.meta.outputs.version }}-portable-Win7-ia32.exe
+            release/SHA256SUMS.txt
+            release/GSM_v${{ steps.meta.outputs.version }}_Source_GitHub.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30

@@ -1,0 +1,8 @@
+GSM Vedomosti v1.5.2
+Purpose: build the readability/refactor release on top of v1.5.1 without changing user-visible behavior.
+Target: Windows 7 x86 / PE32 i386.
+Electron: 22.3.27 (pinned).
+Data schema: 9 (unchanged).
+Backup container: .gsmbackup format version 1 (unchanged).
+Architecture guard: JS/JSX/CJS modules <= 180 lines, descriptive identifiers, no minified source lines.
+Tailwind CSS: 3.4.17 remains installed and configured.
