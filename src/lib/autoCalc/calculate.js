@@ -1,6 +1,7 @@
 import { num } from '../numbers.js'
 import { roundToStep } from './allocation.js'
 import {
+  isReservedCalcCode,
   normalizeCalcCode,
   normalizeRule,
   vehicleAutoCalc,
@@ -28,7 +29,9 @@ export function autoCalcBaseVariables(vehicle, trip) {
   }
 
   for (const [inputCode, inputValue] of Object.entries(trip?.calcInputs || {})) {
-    variables[normalizeCalcCode(inputCode)] = num(inputValue)
+    const normalizedCode = normalizeCalcCode(inputCode)
+    if (isReservedCalcCode(normalizedCode)) continue
+    variables[normalizedCode] = num(inputValue)
   }
 
   return variables
@@ -75,13 +78,19 @@ export function calculateVehicleConsumption(vehicle, trip, catalog = []) {
   const errors = []
 
   for (const rule of rules) {
-    if (rulesByCode.has(rule.code)) errors.push(`Повторяется код результата «${rule.code}».`)
-    else rulesByCode.set(rule.code, rule)
+    if (isReservedCalcCode(rule.code)) {
+      errors.push(`Код результата «${rule.code}» зарезервирован встроенным параметром.`)
+    } else if (rulesByCode.has(rule.code)) {
+      errors.push(`Повторяется код результата «${rule.code}».`)
+    } else {
+      rulesByCode.set(rule.code, rule)
+    }
   }
 
   const variables = { ...baseVariables }
   for (const parameter of config.params) {
     const parameterCode = normalizeCalcCode(parameter.code)
+    if (isReservedCalcCode(parameterCode)) continue
     const parameterValue = variables[parameterCode] ?? num(parameter.defaultValue)
     if (parameterValue !== null) variables[parameterCode] = parameterValue
   }
@@ -91,6 +100,9 @@ export function calculateVehicleConsumption(vehicle, trip, catalog = []) {
   const visitingRuleCodes = new Set()
 
   const evaluateRule = rule => {
+    if (isReservedCalcCode(rule.code)) {
+      throw new Error(`Код «${rule.code}» зарезервирован встроенным параметром`)
+    }
     if (completedRules.has(rule.code)) return completedRules.get(rule.code)
     if (visitingRuleCodes.has(rule.code)) {
       throw new Error(
