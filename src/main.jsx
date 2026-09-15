@@ -5,6 +5,7 @@ import './index.css'
 import './usability.css'
 import './v150.css'
 import './tripPerformance.css'
+import './decodings.css'
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode><App /></React.StrictMode>
