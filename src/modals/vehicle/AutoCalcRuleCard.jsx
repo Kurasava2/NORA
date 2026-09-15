@@ -68,7 +68,7 @@ export default function AutoCalcRuleCard({
         <input
           className="input formula-input"
           value={rule.formula || ''}
-          placeholder="КМ * НОРМА / 100"
+          placeholder="(КМ / 100) * НОРМА + 35%"
           onChange={event => onUpdate({ formula: event.target.value })}
         />
       </Field>
