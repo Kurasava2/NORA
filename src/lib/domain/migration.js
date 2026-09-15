@@ -1,4 +1,5 @@
 import { RATE_PER_MOTOHOUR, normalizeRateType } from '../vehicleMetrics.js'
+import { normalizeDecodingState } from '../decodings/model.js'
 import {
   defaultAutoCalcForVehicle,
   normalizeAutoCalc,
@@ -23,6 +24,7 @@ export function migrateState(input) {
   state.settings = { ...DEFAULT_SETTINGS, ...(state.settings || {}) }
   state.periods = Array.isArray(state.periods) ? state.periods : []
   state.vehicleSettings = state.vehicleSettings || {}
+  state.decoding = normalizeDecodingState(state.decoding)
   state.catalog = mergeCatalog(
     Array.isArray(state.catalog) ? state.catalog : [],
     sourceVersion < 7,
