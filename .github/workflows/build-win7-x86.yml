@@ -107,7 +107,7 @@ jobs:
           }
 
           Compress-Archive -Path "$cleanSource/*" `
-            -DestinationPath "release/GSM_v$version_Source_GitHub.zip" -Force
+            -DestinationPath "release/GSM_v${version}_Source_GitHub.zip" -Force
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
