@@ -5,15 +5,23 @@ const OPERATOR_PRECEDENCE = {
   '-': 1,
   '*': 2,
   '/': 2,
-  '^': 3,
-  'u+': 4,
-  'u-': 4,
+  'u+': 3,
+  'u-': 3,
+  '^': 4,
 }
 
 const RIGHT_ASSOCIATIVE_OPERATORS = new Set(['^', 'u+', 'u-'])
 
+function normalizeMathSymbols(expression) {
+  return String(expression || '')
+    .replace(/,/g, '.')
+    .replace(/[×·∙]/g, '*')
+    .replace(/[÷:]/g, '/')
+    .replace(/[−–—]/g, '-')
+}
+
 export function tokenizeFormula(expression) {
-  const expressionText = String(expression || '').replace(/,/g, '.')
+  const expressionText = normalizeMathSymbols(expression)
   const tokens = []
   let cursor = 0
 
@@ -57,6 +65,12 @@ export function tokenizeFormula(expression) {
       continue
     }
 
+    if (character === '%') {
+      tokens.push({ type: 'percent', value: '%' })
+      cursor += 1
+      continue
+    }
+
     if ('+-*/^()'.includes(character)) {
       tokens.push({
         type: character === '(' ? 'lparen' : character === ')' ? 'rparen' : 'op',
@@ -84,6 +98,13 @@ export function toReversePolishNotation(tokens) {
       continue
     }
 
+    if (token.type === 'percent') {
+      if (previousTokenType !== 'value') throw new Error('Знак % должен стоять после значения')
+      output.push(token)
+      previousTokenType = 'value'
+      continue
+    }
+
     if (token.type === 'lparen') {
       operatorStack.push(token)
       previousTokenType = 'lparen'
@@ -105,8 +126,9 @@ export function toReversePolishNotation(tokens) {
     let operator = token.value
     const isUnaryPosition = ['start', 'op', 'lparen'].includes(previousTokenType)
     if ((operator === '+' || operator === '-') && isUnaryPosition) operator = `u${operator}`
+    const isUnaryOperator = operator === 'u+' || operator === 'u-'
 
-    while (operatorStack.length && operatorStack.at(-1).type === 'op') {
+    while (!isUnaryOperator && operatorStack.length && operatorStack.at(-1).type === 'op') {
       const topOperator = operatorStack.at(-1).value
       const shouldPop = RIGHT_ASSOCIATIVE_OPERATORS.has(operator)
         ? OPERATOR_PRECEDENCE[operator] < OPERATOR_PRECEDENCE[topOperator]
