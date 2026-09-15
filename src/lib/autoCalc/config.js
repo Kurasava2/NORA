@@ -3,6 +3,7 @@ import { RATE_PER_MOTOHOUR, normalizeRateType } from '../vehicleMetrics.js'
 import {
   ALLOCATION_MODES,
   ALLOC_MINIMIZE,
+  BASE_VARIABLE_ALIASES,
 } from './constants.js'
 
 export function normalizeCalcCode(value, fallback = '') {
@@ -21,6 +22,11 @@ export function normalizeCalcCode(value, fallback = '') {
 
 export function isCalcCode(value) {
   return /^[A-ZА-Я_][A-ZА-Я0-9_]*$/.test(normalizeCalcCode(value))
+}
+
+export function isReservedCalcCode(value) {
+  const code = normalizeCalcCode(value)
+  return Object.prototype.hasOwnProperty.call(BASE_VARIABLE_ALIASES, code)
 }
 
 export function normalizeParam(parameter = {}) {
@@ -98,7 +104,10 @@ export function defaultAutoCalcForVehicle(vehicle, catalog = []) {
         id: 'rule_fuel',
         name: 'Топливо',
         code: 'ТОПЛИВО',
-        formula: rateType === RATE_PER_MOTOHOUR ? 'МОТОЧАСЫ * НОРМА' : 'КМ * НОРМА / 100',
+        formula:
+          rateType === RATE_PER_MOTOHOUR
+            ? 'МОТОЧАСЫ * НОРМА'
+            : '(КМ / 100) * НОРМА',
         materials,
         allocation: ALLOC_MINIMIZE,
         priority: materials,
