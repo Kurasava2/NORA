@@ -57,10 +57,8 @@ export default function TripMaterialsSection({
             key={materialName}
             name={materialName}
             entry={form.gsm[materialName]}
-            onChange={(fieldName, value) =>
-              materials.setMaterialValue(materialName, fieldName, value)
-            }
-            onRemove={() => materials.removeMaterial(materialName)}
+            onChange={materials.setMaterialValue}
+            onRemove={materials.removeMaterial}
             tolerance={state.settings.tolerance}
           />
         ))}
