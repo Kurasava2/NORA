@@ -1,11 +1,12 @@
 import { num } from '../numbers.js'
-import { allocateConsumption, roundToStep } from './allocation.js'
+import { roundToStep } from './allocation.js'
 import {
   normalizeCalcCode,
   normalizeRule,
   vehicleAutoCalc,
 } from './config.js'
 import { evaluateFormula, formulaIdentifiers } from './formula.js'
+import { allocateRuleConsumption } from './ruleAllocation.js'
 
 export function autoCalcBaseVariables(vehicle, trip) {
   const odometerStart = num(trip?.odoStart)
@@ -43,6 +44,10 @@ export function autoCalcSignature(vehicle, trip) {
     balances[materialName] = {
       start: num(materialEntry.start),
       received: num(materialEntry.received),
+      manualSpent:
+        materialEntry._calcSource === 'manual' ? num(materialEntry.spent) : null,
+      manualEnd:
+        materialEntry._calcSource === 'manual' ? num(materialEntry.end) : null,
     }
   }
 
@@ -81,6 +86,7 @@ export function calculateVehicleConsumption(vehicle, trip, catalog = []) {
     if (parameterValue !== null) variables[parameterCode] = parameterValue
   }
 
+  const inputVariables = { ...variables }
   const completedRules = new Map()
   const visitingRuleCodes = new Set()
 
@@ -94,34 +100,29 @@ export function calculateVehicleConsumption(vehicle, trip, catalog = []) {
 
     visitingRuleCodes.add(rule.code)
 
-    for (const identifier of formulaIdentifiers(rule.formula)) {
-      if (rulesByCode.has(identifier) && !completedRules.has(identifier)) {
-        const dependencyResult = evaluateRule(rulesByCode.get(identifier))
-        variables[identifier] = dependencyResult.value
+    try {
+      for (const identifier of formulaIdentifiers(rule.formula)) {
+        if (rulesByCode.has(identifier) && !completedRules.has(identifier)) {
+          const dependencyResult = evaluateRule(rulesByCode.get(identifier))
+          variables[identifier] = dependencyResult.value
+        }
       }
+
+      let calculatedValue = evaluateFormula(rule.formula, variables)
+      if (calculatedValue < 0) {
+        throw new Error(`Правило «${rule.name}» дало отрицательный расход`)
+      }
+
+      calculatedValue = roundToStep(calculatedValue, rule.rounding)
+      variables[rule.code] = calculatedValue
+
+      const allocation = allocateRuleConsumption(calculatedValue, rule, trip)
+      const result = { ...rule, value: calculatedValue, ...allocation }
+      completedRules.set(rule.code, result)
+      return result
+    } finally {
+      visitingRuleCodes.delete(rule.code)
     }
-
-    let calculatedValue = evaluateFormula(rule.formula, variables)
-    if (calculatedValue < 0) {
-      throw new Error(`Правило «${rule.name}» дало отрицательный расход`)
-    }
-
-    calculatedValue = roundToStep(calculatedValue, rule.rounding)
-    variables[rule.code] = calculatedValue
-
-    const allocation = allocateConsumption(
-      calculatedValue,
-      rule.materials,
-      trip?.gsm || {},
-      rule.allocation,
-      rule.priority,
-      rule.rounding,
-    )
-
-    const result = { ...rule, value: calculatedValue, ...allocation }
-    visitingRuleCodes.delete(rule.code)
-    completedRules.set(rule.code, result)
-    return result
   }
 
   const calculatedRules = []
@@ -138,6 +139,7 @@ export function calculateVehicleConsumption(vehicle, trip, catalog = []) {
     errors,
     rules: calculatedRules,
     variables,
+    inputVariables,
     signature: autoCalcSignature(vehicle, trip),
   }
 }
