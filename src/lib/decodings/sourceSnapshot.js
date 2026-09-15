@@ -1,3 +1,4 @@
+import { ALLOC_NONE, calculateVehicleConsumption } from '../autoCalc.js'
 import { num } from '../numbers.js'
 import { motohoursEnd } from '../vehicleMetrics.js'
 
@@ -29,25 +30,58 @@ function materialTotals(statement, materialName) {
   return { start: start ?? 0, received, surrendered: 0, spent, end: end ?? 0 }
 }
 
+function tripNormAllocations(vehicle, trip, catalog) {
+  if (trip?.unused) return new Map()
+  const gsm = Object.fromEntries(
+    Object.entries(trip?.gsm || {}).map(([materialName, entry]) => [
+      materialName,
+      { ...entry, _calcSource: '' },
+    ]),
+  )
+  const result = calculateVehicleConsumption(vehicle, { ...trip, gsm }, catalog)
+  if (!result.ok) return null
+  const totals = new Map()
+
+  for (const rule of result.rules || []) {
+    if (rule.allocation === ALLOC_NONE) continue
+    for (const allocation of rule.allocations || []) {
+      const previous = totals.get(allocation.material) || 0
+      totals.set(allocation.material, previous + Number(allocation.spent || 0))
+    }
+  }
+  return totals
+}
+
+function statementNorms(vehicle, statement, catalog) {
+  const totals = new Map()
+  for (const trip of statement?.trips || []) {
+    const allocations = tripNormAllocations(vehicle, trip, catalog)
+    if (allocations === null) return null
+    for (const [materialName, amount] of allocations) {
+      totals.set(materialName, (totals.get(materialName) || 0) + amount)
+    }
+  }
+  return totals
+}
+
 function lastTrip(statement) {
   const trips = statement?.trips || []
   return trips.length ? trips[trips.length - 1] : null
 }
 
-function vehicleIndex(state) {
-  return new Map((state?.vehicles || []).map(vehicle => [vehicle.id, vehicle]))
-}
-
 export function buildDecodingSourceSnapshot(state, period) {
-  const vehiclesById = vehicleIndex(state)
+  const vehiclesById = new Map((state?.vehicles || []).map(vehicle => [vehicle.id, vehicle]))
   const rows = []
 
   for (const statement of period?.statements || []) {
     if (!statement?.trips?.length) continue
     const vehicle = vehiclesById.get(statement.vehicleId) || {}
     const finalTrip = lastTrip(statement)
+    const norms = statementNorms(vehicle, statement, state?.catalog || [])
 
     for (const materialName of materialNames(statement)) {
+      const materialTotal = materialTotals(statement, materialName)
+      const norm = norms?.has(materialName) ? norms.get(materialName) : null
       rows.push({
         statementId: statement.id,
         vehicleId: statement.vehicleId,
@@ -59,9 +93,9 @@ export function buildDecodingSourceSnapshot(state, period) {
         lastWaybillDate: String(finalTrip?.date || ''),
         odometerEnd: num(finalTrip?.odoEnd),
         motohoursEnd: motohoursEnd(finalTrip),
-        ...materialTotals(statement, materialName),
-        norm: null,
-        variance: null,
+        ...materialTotal,
+        norm,
+        variance: norm === null ? null : norm - materialTotal.spent,
       })
     }
   }
@@ -85,7 +119,6 @@ export function buildDecodingSourceSnapshot(state, period) {
 function canonicalize(value) {
   if (value === null || typeof value !== 'object') return value
   if (Array.isArray(value)) return value.map(canonicalize)
-
   const output = {}
   for (const key of Object.keys(value).sort()) output[key] = canonicalize(value[key])
   return output
@@ -94,11 +127,9 @@ function canonicalize(value) {
 export function decodingSourceFingerprint(snapshot) {
   const source = JSON.stringify(canonicalize(snapshot))
   let hash = 2166136261
-
   for (let index = 0; index < source.length; index += 1) {
     hash ^= source.charCodeAt(index)
     hash = Math.imul(hash, 16777619)
   }
-
   return `v1-${(hash >>> 0).toString(16).padStart(8, '0')}`
 }
