@@ -1,5 +1,6 @@
 import React from 'react'
 import CatalogView from '../views/CatalogView.jsx'
+import DecodingsView from '../views/DecodingsView.jsx'
 import HistoryView from '../views/HistoryView.jsx'
 import HomeView from '../views/HomeView.jsx'
 import PeriodView from '../views/PeriodView.jsx'
@@ -96,6 +97,15 @@ export default function AppWorkspace({
           onHistory={onVehicleHistory}
           onAdd={onAddVehicle}
           onEdit={onEditVehicle}
+          notify={notify}
+          confirmAction={confirmAction}
+        />
+      )}
+
+      {view.name === 'decodings' && (
+        <DecodingsView
+          state={state}
+          mutate={mutate}
           notify={notify}
           confirmAction={confirmAction}
         />
