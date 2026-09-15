@@ -10,6 +10,7 @@ export {
   defaultAutoCalcForVehicle,
   inferFuelMaterials,
   isCalcCode,
+  isReservedCalcCode,
   normalizeAutoCalc,
   normalizeCalcCode,
   normalizeParam,
