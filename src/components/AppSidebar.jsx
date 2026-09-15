@@ -8,6 +8,7 @@ export default function AppSidebar({
   appInfo,
   onHome,
   onVehicles,
+  onDecodings,
   onCatalog,
   onSettings,
   onSave,
@@ -45,6 +46,12 @@ export default function AppSidebar({
           onClick={onVehicles}
           icon="▣"
           label="Автомобили"
+        />
+        <NavButton
+          active={viewName === 'decodings'}
+          onClick={onDecodings}
+          icon="▦"
+          label="Расшифровки"
         />
         <NavButton
           active={viewName === 'catalog'}
