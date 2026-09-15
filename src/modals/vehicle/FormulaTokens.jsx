@@ -1,5 +1,7 @@
 import React from 'react'
 
+const OPERATOR_TOKENS = ['(', ')', '+', '−', '×', '÷', '%', '^']
+
 export default function FormulaTokens({ form, rule, onInsert }) {
   const parameterCodes = (form.autoCalc?.params || []).map(parameter => parameter.code)
   const otherRuleCodes = (form.autoCalc?.rules || [])
@@ -11,7 +13,7 @@ export default function FormulaTokens({ form, rule, onInsert }) {
   return (
     <div className="formula-token-row">
       <span>Вставить:</span>
-      {uniqueTokens.map(token => (
+      {[...uniqueTokens, ...OPERATOR_TOKENS].map(token => (
         <button
           type="button"
           className="formula-token"
