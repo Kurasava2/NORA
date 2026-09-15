@@ -22,11 +22,9 @@ export default function useTripMaterials({ state, statement, editingId, form, se
       }
 
       if (fieldName === 'start') materialEntry._carried = false
-      if (
-        (fieldName === 'spent' || fieldName === 'end') &&
-        materialEntry._calcSource === 'auto'
-      ) {
-        materialEntry._calcSource = 'manual'
+      if (fieldName === 'spent' || fieldName === 'end') {
+        const hasManualValue = String(value ?? '').trim() !== ''
+        materialEntry._calcSource = hasManualValue ? 'manual' : ''
       }
 
       const currentAutoTarget = materialEntry._autoTarget || ''
