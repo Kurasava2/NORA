@@ -111,6 +111,7 @@ export default function App() {
           appInfo={persistence.appInfo}
           onHome={navigation.goHome}
           onVehicles={() => navigation.navigate({ name: 'vehicles' })}
+          onDecodings={() => navigation.navigate({ name: 'decodings' })}
           onCatalog={() => navigation.navigate({ name: 'catalog' })}
           onSettings={modals.openSettingsModal}
           onSave={() => persistence.saveCurrent(true)}
