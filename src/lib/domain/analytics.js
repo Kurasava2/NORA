@@ -3,7 +3,7 @@ import { motohoursWorked } from '../vehicleMetrics.js'
 import { materialOf } from './catalog.js'
 import { sortedPeriods } from './formatting.js'
 import { statementMaterialNames, tripMaterialNames } from './materials.js'
-import { statementStatus } from './statementValidation.js'
+import { statementStatus } from './statementStatus.js'
 import { vehicleOf } from './vehicles.js'
 
 const PERIOD_ROWS_CACHE = new WeakMap()

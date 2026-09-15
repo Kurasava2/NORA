@@ -3,6 +3,18 @@ import { DateControl, Field, classNames } from '../../components/ui.jsx'
 import { nfmt } from '../../lib/domain.js'
 import SectionStep from './SectionStep.jsx'
 
+const liveValueClasses =
+  'flex min-h-[44px] items-baseline justify-center gap-1.5 rounded-[9px] border border-slate-700 bg-[#0b1220] px-[11px] py-[9px]'
+
+function LiveCounterValue({ value, unit, invalid = false }) {
+  return (
+    <div className={classNames(liveValueClasses, invalid && 'border-red-500')}>
+      <b className="text-lg leading-[1.1] text-gray-100">{value}</b>
+      <small className="text-[11px] text-slate-400">{unit}</small>
+    </div>
+  )
+}
+
 export default function TripBasicsSections({
   form,
   setForm,
@@ -75,11 +87,16 @@ export default function TripBasicsSections({
               onChange={event => setTripField('odoEnd', event.target.value)}
             />
           </Field>
-          <Field className="trip-km-field" label="Пройдено">
-            <div className={classNames('km-live km-live-value', mileage !== null && mileage < 0 && 'bad')}>
-              <b>{mileage === null ? '—' : String(Math.round(mileage * 100) / 100).replace('.', ',')}</b>
-              <small>км</small>
-            </div>
+          <Field className="[&_.field-label]:mb-1.5" label="Пройдено">
+            <LiveCounterValue
+              value={
+                mileage === null
+                  ? '—'
+                  : String(Math.round(mileage * 100) / 100).replace('.', ',')
+              }
+              unit="км"
+              invalid={mileage !== null && mileage < 0}
+            />
           </Field>
         </div>
 
@@ -102,16 +119,12 @@ export default function TripBasicsSections({
                   onChange={event => setTripField('motohoursEnd', event.target.value)}
                 />
               </Field>
-              <Field className="trip-km-field" label="Отработано">
-                <div
-                  className={classNames(
-                    'km-live km-live-value',
-                    motohoursWorked !== null && motohoursWorked < 0 && 'bad',
-                  )}
-                >
-                  <b>{motohoursWorked === null ? '—' : nfmt(motohoursWorked)}</b>
-                  <small>м/ч</small>
-                </div>
+              <Field className="[&_.field-label]:mb-1.5" label="Отработано">
+                <LiveCounterValue
+                  value={motohoursWorked === null ? '—' : nfmt(motohoursWorked)}
+                  unit="м/ч"
+                  invalid={motohoursWorked !== null && motohoursWorked < 0}
+                />
               </Field>
             </div>
             {legacyMotohours && (
