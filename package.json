@@ -12,7 +12,7 @@
     "dist:win7:x86": "npm run build && electron-builder --win portable --ia32",
     "dist:win7:x64": "npm run build && electron-builder --win portable --x64",
     "dist:dir": "npm run build && electron-builder --win dir --ia32",
-    "test": "node --test tests/backup.test.cjs tests/ru.test.mjs tests/periodImport.test.mjs tests/vehicleMetrics.test.mjs tests/tripValidation.test.mjs tests/autoCalc.test.mjs tests/modalLayout.test.mjs tests/codeQuality.test.mjs",
+    "test": "node --test tests/backup.test.cjs tests/ru.test.mjs tests/periodImport.test.mjs tests/vehicleMetrics.test.mjs tests/tripValidation.test.mjs tests/autoCalc.test.mjs tests/autoCalcCompatibility.test.mjs tests/modalLayout.test.mjs tests/codeQuality.test.mjs",
     "verify": "npm test && npm run build"
   },
   "dependencies": {
