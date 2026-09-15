@@ -17,6 +17,7 @@ export default function Modal({
   children,
   wide = false,
   extraWide = false,
+  backdropClassName = '',
 }) {
   const dialogRef = useRef(null)
   const closeHandlerRef = useRef(onClose)
@@ -82,7 +83,10 @@ export default function Modal({
   }
 
   return (
-    <div className="modal-backdrop" onMouseDown={handleBackdropMouseDown}>
+    <div
+      className={classNames('modal-backdrop', backdropClassName)}
+      onMouseDown={handleBackdropMouseDown}
+    >
       <div
         ref={dialogRef}
         tabIndex={-1}
