@@ -68,7 +68,7 @@ export function prefilledTrip(state, statement, period, editingTrip = null) {
     date: previousTrip?.date || period.start,
     number: '',
     odoStart: odometerStart,
-    odoEnd: odometerStart,
+    odoEnd: '',
     motohoursStart,
     motohoursEnd: motohoursStart,
     motohours: '',
