@@ -78,13 +78,9 @@ export function calculateVehicleConsumption(vehicle, trip, catalog = []) {
   const errors = []
 
   for (const rule of rules) {
-    if (isReservedCalcCode(rule.code)) {
-      errors.push(`Код результата «${rule.code}» зарезервирован встроенным параметром.`)
-    } else if (rulesByCode.has(rule.code)) {
-      errors.push(`Повторяется код результата «${rule.code}».`)
-    } else {
-      rulesByCode.set(rule.code, rule)
-    }
+    if (isReservedCalcCode(rule.code)) continue
+    if (rulesByCode.has(rule.code)) errors.push(`Повторяется код результата «${rule.code}».`)
+    else rulesByCode.set(rule.code, rule)
   }
 
   const variables = { ...baseVariables }
