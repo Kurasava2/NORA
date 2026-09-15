@@ -1,0 +1,22 @@
+/* Trip modal performance overrides for legacy / low-end Windows 7 PCs. */
+.performance-mode .trip-modal-backdrop{
+  background:#05070c;
+}
+
+.performance-mode .trip-modal-backdrop .modal{
+  box-shadow:none;
+  isolation:isolate;
+}
+
+.performance-mode .trip-modal-backdrop .modal-head,
+.performance-mode .trip-modal-backdrop .sticky-actions{
+  position:static;
+}
+
+.performance-mode .trip-modal-backdrop .trip-modal-body{
+  contain:paint;
+}
+
+.performance-mode .trip-modal-backdrop .material-entry{
+  contain:layout paint style;
+}
