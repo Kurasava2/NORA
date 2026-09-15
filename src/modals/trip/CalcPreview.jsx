@@ -11,6 +11,9 @@ export default function CalcPreview({ preview, onApply, onClose, tolerance }) {
     0,
   )
   const hasShortage = totalShortage > toleranceOf(tolerance)
+  const inputVariables = Object.entries(preview.inputVariables || {}).filter(
+    ([, variableValue]) => num(variableValue) !== null,
+  )
 
   return (
     <div className={classNames('calc-preview', preview.errors?.length && 'bad')}>
@@ -27,6 +30,15 @@ export default function CalcPreview({ preview, onApply, onClose, tolerance }) {
           {preview.errors.map((errorMessage, errorIndex) => (
             <div key={errorIndex}>• {errorMessage}</div>
           ))}
+        </div>
+      )}
+
+      {!preview.errors?.length && inputVariables.length > 0 && (
+        <div className="formula-meta">
+          Подставлено:{' '}
+          {inputVariables
+            .map(([variableName, variableValue]) => `${variableName} = ${nfmt(variableValue)}`)
+            .join(' · ')}
         </div>
       )}
 
@@ -50,9 +62,18 @@ export default function CalcPreview({ preview, onApply, onClose, tolerance }) {
                     <div key={allocation.material}>
                       <span>{allocation.material}</span>
                       <b>−{nfmt(allocation.spent)} л</b>
-                      <small>останется {nfmt(allocation.end)} л</small>
+                      <small>
+                        {allocation.locked ? 'MANUAL · ' : ''}
+                        останется {nfmt(allocation.end)} л
+                      </small>
                     </div>
                   ))}
+                  {rule.manualExcess > toleranceOf(tolerance) && (
+                    <div className="calc-shortage">
+                      Ручной расход выше расчётного на {nfmt(rule.manualExcess)} л.
+                      AUTO не изменит ручные значения.
+                    </div>
+                  )}
                   {rule.shortage > toleranceOf(tolerance) && (
                     <div className="calc-shortage">
                       Не хватает {nfmt(rule.shortage)} л по текущим остаткам/получению.
