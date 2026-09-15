@@ -13,6 +13,18 @@ const periodRowButtonClasses = [
 const periodStatClasses =
   'whitespace-nowrap text-[11px] text-gray-400 max-[1180px]:whitespace-normal max-[930px]:hidden'
 
+const yearSummaryClasses = [
+  'flex min-h-[52px] cursor-pointer list-none select-none items-center gap-2.5',
+  'border-b border-transparent bg-[#111927] px-3 py-2 group-open:border-[#263244]',
+  '[&::-webkit-details-marker]:hidden',
+].join(' ')
+
+const yearChevronClasses = [
+  'grid h-[22px] w-[22px] place-items-center text-[22px] leading-none text-gray-400',
+  'transition-transform duration-[120ms] group-open:rotate-90',
+  '[.performance-mode_&]:transition-none',
+].join(' ')
+
 export default function PeriodYearSections({
   groups,
   summaryById,
@@ -28,10 +40,8 @@ export default function PeriodYearSections({
           key={year}
           defaultOpen={yearIndex === 0}
         >
-          <summary className="flex min-h-[52px] cursor-pointer list-none select-none items-center gap-2.5 border-b border-transparent bg-[#111927] px-3 py-2 group-open:border-[#263244] [&::-webkit-details-marker]:hidden">
-            <span className="grid h-[22px] w-[22px] place-items-center text-[22px] leading-none text-gray-400 transition-transform duration-[120ms] group-open:rotate-90 [.performance-mode_&]:transition-none">
-              ›
-            </span>
+          <summary className={yearSummaryClasses}>
+            <span className={yearChevronClasses}>›</span>
             <b className="text-lg tracking-[.02em] text-gray-100">{year}</b>
             <small className="text-[11.5px] text-gray-400">
               {countForm(periods.length, RU_FORMS.month)}
