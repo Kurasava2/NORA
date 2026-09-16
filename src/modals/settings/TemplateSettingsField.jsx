@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button, Field } from '../../components/ui.jsx'
+import { Button } from '../../components/ui.jsx'
 import { countForm, RU_FORMS } from '../../lib/ru.js'
 
 export default function TemplateSettingsField({ template, onChoose, onRemove }) {
@@ -11,8 +11,8 @@ export default function TemplateSettingsField({ template, onChoose, onRemove }) 
     : 'Загрузите исходную книгу .xlsx'
 
   return (
-    <Field className="span-2" label="Excel-шаблон ведомости">
-      <div className="template-card">
+    <div className="settings-fields">
+      <div className="template-card settings-template-card">
         <div>
           <b>{template?.name || 'Шаблон не загружен'}</b>
           <small>{templateDescription}</small>
@@ -22,6 +22,10 @@ export default function TemplateSettingsField({ template, onChoose, onRemove }) 
           {template && <Button type="button" danger onClick={onRemove}>Удалить</Button>}
         </div>
       </div>
-    </Field>
+      <div className="settings-note">
+        Шаблон хранится локально и используется при экспорте ведомостей. Данные приложения
+        по-прежнему хранятся отдельно от Excel.
+      </div>
+    </div>
   )
 }
