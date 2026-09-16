@@ -5,6 +5,8 @@ import './index.css'
 import './usability.css'
 import './v150.css'
 import './tripPerformance.css'
+import './scrollPerformance.css'
+import './settings.css'
 import './decodings.css'
 
 createRoot(document.getElementById('root')).render(
