@@ -1,0 +1,38 @@
+/* Shared scroll/compositor optimizations for legacy Windows 7 PCs. */
+.performance-mode .modal-backdrop{
+  background:#05070c;
+}
+
+.performance-mode .modal-backdrop .modal{
+  box-shadow:none;
+  isolation:isolate;
+}
+
+.performance-mode .modal-backdrop .modal-head,
+.performance-mode .modal-backdrop .sticky-actions{
+  position:static;
+}
+
+.performance-mode .main-content,
+.performance-mode .sidebar,
+.performance-mode .modal-body,
+.performance-mode .trip-modal-body,
+.performance-mode .settings-pane,
+.performance-mode .table-wrap,
+.performance-mode .paper-preview,
+.performance-mode .material-picker-grid,
+.performance-mode .recovery-screen{
+  contain:paint;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+
+.performance-mode .table-wrap,
+.performance-mode .material-picker-grid{
+  contain:layout paint;
+}
+
+.performance-mode .main-content,
+.performance-mode .sidebar{
+  isolation:isolate;
+}
