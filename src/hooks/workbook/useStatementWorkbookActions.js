@@ -3,6 +3,7 @@ import { safeFile, validateStatement, vehicleOf } from '../../lib/domain.js'
 import { xlsxModel } from '../../lib/document.js'
 import { loadTemplateEngine, reportRendererError } from '../../lib/runtime.js'
 import { countForm, RU_FORMS } from '../../lib/ru.js'
+import { freshStatementContext } from '../../lib/workbook/freshCarry.js'
 import { loadTemplateBytes } from '../../lib/workbook/templateSource.js'
 
 async function confirmInvalidStatement(confirmAction, validation, action) {
@@ -19,6 +20,14 @@ async function confirmInvalidStatement(confirmAction, validation, action) {
   })
 }
 
+function freshContext(state, period, statement) {
+  return freshStatementContext(state, period?.id, statement?.id) || {
+    state,
+    period,
+    statement,
+  }
+}
+
 export default function useStatementWorkbookActions({
   state,
   notify,
@@ -29,19 +38,20 @@ export default function useStatementWorkbookActions({
   const exportStatement = useCallback(
     (period, statement) => {
       return runExclusive('экспорт ведомости', async () => {
-        const vehicle = vehicleOf(state, statement.vehicleId)
-        const validation = validateStatement(state, statement, period)
+        const fresh = freshContext(state, period, statement)
+        const vehicle = vehicleOf(fresh.state, fresh.statement.vehicleId)
+        const validation = validateStatement(fresh.state, fresh.statement, fresh.period)
         if (!(await confirmInvalidStatement(confirmAction, validation, 'export'))) return
 
         try {
           const { render } = await loadTemplateEngine()
           const workbookBytes = await render(
             await loadTemplateBytes(),
-            xlsxModel(state, period, statement, vehicle),
+            xlsxModel(fresh.state, fresh.period, fresh.statement, vehicle),
           )
           await saveRenderedXlsx(
             workbookBytes,
-            safeFile(`Ведомость_${vehicle.shortNo}_${period.start}_${period.end}.xlsx`),
+            safeFile(`Ведомость_${vehicle.shortNo}_${fresh.period.start}_${fresh.period.end}.xlsx`),
           )
         } catch (error) {
           reportRendererError('xlsx:exportStatement', error)
@@ -55,8 +65,9 @@ export default function useStatementWorkbookActions({
   const printStatement = useCallback(
     (period, statement) => {
       return runExclusive('печать', async () => {
-        const vehicle = vehicleOf(state, statement.vehicleId)
-        const validation = validateStatement(state, statement, period)
+        const fresh = freshContext(state, period, statement)
+        const vehicle = vehicleOf(fresh.state, fresh.statement.vehicleId)
+        const validation = validateStatement(fresh.state, fresh.statement, fresh.period)
         if (!(await confirmInvalidStatement(confirmAction, validation, 'print'))) return
 
         if (!window.desktopAPI?.isElectron) {
@@ -64,17 +75,17 @@ export default function useStatementWorkbookActions({
           return
         }
 
-        const directPrint = state.settings.directPrint && state.settings.preferredPrinter
+        const directPrint = fresh.state.settings.directPrint && fresh.state.settings.preferredPrinter
         try {
           const { renderHtml } = await loadTemplateEngine()
           const html = await renderHtml(
             await loadTemplateBytes(),
-            xlsxModel(state, period, statement, vehicle),
+            xlsxModel(fresh.state, fresh.period, fresh.statement, vehicle),
             true,
           )
           const printResult = await window.desktopAPI.printHtml(html, {
             silent: Boolean(directPrint),
-            deviceName: directPrint ? state.settings.preferredPrinter : '',
+            deviceName: directPrint ? fresh.state.settings.preferredPrinter : '',
           })
 
           if (printResult?.success) {
@@ -94,10 +105,12 @@ export default function useStatementWorkbookActions({
   const getPreviewHtml = useCallback(
     async (period, statement, vehicle) => {
       if (!period || !statement || !vehicle) throw new Error('Ведомость не выбрана.')
+      const fresh = freshContext(state, period, statement)
+      const freshVehicle = vehicleOf(fresh.state, fresh.statement.vehicleId)
       const { renderHtml } = await loadTemplateEngine()
       return renderHtml(
         await loadTemplateBytes(),
-        xlsxModel(state, period, statement, vehicle),
+        xlsxModel(fresh.state, fresh.period, fresh.statement, freshVehicle),
         false,
       )
     },
