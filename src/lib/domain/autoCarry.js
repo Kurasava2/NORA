@@ -21,19 +21,10 @@ export function openingSignature(opening) {
   })
 }
 
-export function autoCarryEnabled(state, vehicleId) {
-  return Boolean(state?.vehicleSettings?.[vehicleId]?.autoCarry)
-}
-
-export function setAutoCarryEnabled(state, vehicleId, enabled) {
-  state.vehicleSettings = state.vehicleSettings || {}
-  const settings = { ...(state.vehicleSettings[vehicleId] || {}) }
-
-  if (enabled) settings.autoCarry = true
-  else delete settings.autoCarry
-
-  if (Object.keys(settings).length) state.vehicleSettings[vehicleId] = settings
-  else delete state.vehicleSettings[vehicleId]
+export function statementOpeningIsCurrent(state, period, statement) {
+  if (!period || !statement) return true
+  const expectedOpening = buildOpening(state, statement.vehicleId, period)
+  return openingSignature(statement.opening) === openingSignature(expectedOpening)
 }
 
 function syncOpeningMetrics(statement) {
@@ -56,23 +47,4 @@ export function refreshStatementOpening(state, period, statement) {
   syncOpeningMetrics(statement)
   reconcileCarryForward(state, statement)
   return true
-}
-
-export function syncFutureVehicleCarry(state, vehicleId, sourcePeriod) {
-  if (!autoCarryEnabled(state, vehicleId) || !sourcePeriod) return 0
-
-  const futurePeriods = [...(state.periods || [])]
-    .filter(period => period.id !== sourcePeriod.id && period.start > sourcePeriod.start)
-    .sort((leftPeriod, rightPeriod) => leftPeriod.start.localeCompare(rightPeriod.start))
-
-  let updatedStatements = 0
-  for (const period of futurePeriods) {
-    const statement = (period.statements || []).find(item => item.vehicleId === vehicleId)
-    if (!statement) continue
-
-    const changed = refreshStatementOpening(state, period, statement)
-    if (!changed) break
-    updatedStatements += 1
-  }
-  return updatedStatements
 }
