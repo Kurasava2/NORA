@@ -9,6 +9,7 @@ import {
 import { xlsxModel } from '../../lib/document.js'
 import { loadTemplateEngine, reportRendererError } from '../../lib/runtime.js'
 import { countForm, RU_FORMS } from '../../lib/ru.js'
+import { freshPeriodContext } from '../../lib/workbook/freshCarry.js'
 import { loadTemplateBytes } from '../../lib/workbook/templateSource.js'
 
 function statementForVehicle(period, vehicleId) {
@@ -33,9 +34,10 @@ export default function usePeriodWorkbookExport({
   return useCallback(
     period => {
       return runExclusive('экспорт периода', async () => {
-        const errorCount = (period.statements || []).reduce(
+        const fresh = freshPeriodContext(state, period?.id) || { state, period }
+        const errorCount = (fresh.period.statements || []).reduce(
           (totalErrors, statement) =>
-            totalErrors + validateStatement(state, statement, period).errors.length,
+            totalErrors + validateStatement(fresh.state, statement, fresh.period).errors.length,
           0,
         )
 
@@ -50,17 +52,17 @@ export default function usePeriodWorkbookExport({
         }
 
         try {
-          const workbookModels = (state.vehicles || []).map(baseVehicle => {
-            const vehicle = vehicleOf(state, baseVehicle.id)
-            const statement = statementForVehicle(period, baseVehicle.id)
-            return xlsxModel(state, period, statement, vehicle)
+          const workbookModels = (fresh.state.vehicles || []).map(baseVehicle => {
+            const vehicle = vehicleOf(fresh.state, baseVehicle.id)
+            const statement = statementForVehicle(fresh.period, baseVehicle.id)
+            return xlsxModel(fresh.state, fresh.period, statement, vehicle)
           })
 
           const { renderBook } = await loadTemplateEngine()
           const workbookBytes = await renderBook(await loadTemplateBytes(), workbookModels)
           await saveRenderedXlsx(
             workbookBytes,
-            safeFile(`Ведомости_ГСМ_${periodMonthName(period)}_${periodYear(period)}.xlsx`),
+            safeFile(`Ведомости_ГСМ_${periodMonthName(fresh.period)}_${periodYear(fresh.period)}.xlsx`),
           )
         } catch (error) {
           reportRendererError('xlsx:exportPeriod', error)
