@@ -54,8 +54,10 @@ export { reconcileCarryForward } from './domain/statementCarry.js'
 
 export {
   openingSignature,
+  refreshCarryPathToStatement,
+  refreshPeriodCarry,
   refreshStatementOpening,
-  statementOpeningIsCurrent,
+  statementCarryPathIsCurrent,
 } from './domain/autoCarry.js'
 
 export { validateStatement } from './domain/statementValidation.js'
