@@ -51,6 +51,14 @@ export { addTripMaterial, predecessorTrip, prefilledTrip } from './domain/tripPr
 
 export { reconcileCarryForward } from './domain/statementCarry.js'
 
+export {
+  autoCarryEnabled,
+  openingSignature,
+  refreshStatementOpening,
+  setAutoCarryEnabled,
+  syncFutureVehicleCarry,
+} from './domain/autoCarry.js'
+
 export { validateStatement } from './domain/statementValidation.js'
 export { statementStatus } from './domain/statementStatus.js'
 

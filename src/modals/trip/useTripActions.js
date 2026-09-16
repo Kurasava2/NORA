@@ -1,4 +1,10 @@
-import { clone, num, reconcileCarryForward, sortTrips } from '../../lib/domain.js'
+import {
+  clone,
+  num,
+  reconcileCarryForward,
+  sortTrips,
+  syncFutureVehicleCarry,
+} from '../../lib/domain.js'
 import { insertionListOrder } from '../../lib/trips.js'
 import { tripFormErrors } from './tripFormValidation.js'
 
@@ -82,6 +88,7 @@ export default function useTripActions({
         syncFollowingTripStart(nextStatement, tripRecord.id, vehicle)
       }
       reconcileCarryForward(nextState, nextStatement)
+      syncFutureVehicleCarry(nextState, nextStatement.vehicleId, nextPeriod)
     })
 
     notify(editingId ? 'Путёвка обновлена' : 'Путёвка добавлена')
@@ -108,6 +115,7 @@ export default function useTripActions({
         candidateTrip => candidateTrip.id !== editingId,
       )
       reconcileCarryForward(nextState, nextStatement)
+      syncFutureVehicleCarry(nextState, nextStatement.vehicleId, nextPeriod)
     })
 
     notify('Путёвка удалена')

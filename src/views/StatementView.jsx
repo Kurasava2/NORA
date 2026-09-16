@@ -3,12 +3,15 @@ import { Badge, Button, Card, PageHead } from '../components/ui.jsx'
 import { BalancePanel, CarryPanel, CheckPanel, TripTable } from '../components/statement.jsx'
 import TripModal from '../modals/TripModal.jsx'
 import {
-  buildOpening,
   fmtDate,
   periodMonthName,
   periodName,
   periodYear,
+  autoCarryEnabled,
   reconcileCarryForward,
+  refreshStatementOpening,
+  setAutoCarryEnabled,
+  syncFutureVehicleCarry,
   statementStatus,
   totals,
 } from '../lib/domain.js'
@@ -39,14 +42,40 @@ export default function StatementView({
   const statementTotals = useMemo(() => totals(statement), [statement])
 
   const refreshCarry = () => {
+    let futureUpdates = 0
     mutate(nextState => {
       const nextPeriod = nextState.periods.find(candidatePeriod => candidatePeriod.id === period.id)
       const nextStatement = nextPeriod.statements.find(
         candidateStatement => candidateStatement.id === statement.id,
       )
-      nextStatement.opening = buildOpening(nextState, nextStatement.vehicleId, nextPeriod)
-      reconcileCarryForward(nextState, nextStatement)
+      refreshStatementOpening(nextState, nextPeriod, nextStatement)
+      futureUpdates = syncFutureVehicleCarry(nextState, nextStatement.vehicleId, nextPeriod)
     })
+    notify(
+      futureUpdates
+        ? `Перенос обновлён · далее обновлено ведомостей: ${futureUpdates}`
+        : 'Перенос обновлён',
+    )
+  }
+
+  const changeAutoCarry = enabled => {
+    let futureUpdates = 0
+    mutate(nextState => {
+      setAutoCarryEnabled(nextState, vehicle.id, enabled)
+      if (!enabled) return
+
+      const nextPeriod = nextState.periods.find(candidatePeriod => candidatePeriod.id === period.id)
+      const nextStatement = nextPeriod.statements.find(
+        candidateStatement => candidateStatement.id === statement.id,
+      )
+      refreshStatementOpening(nextState, nextPeriod, nextStatement)
+      futureUpdates = syncFutureVehicleCarry(nextState, vehicle.id, nextPeriod)
+    })
+    notify(
+      enabled
+        ? `Автоперенос включён${futureUpdates ? ` · обновлено ведомостей: ${futureUpdates}` : ''}`
+        : 'Автоперенос выключен',
+    )
   }
 
   const deleteTripFromList = async trip => {
@@ -67,6 +96,7 @@ export default function StatementView({
         candidateTrip => candidateTrip.id !== trip.id,
       )
       reconcileCarryForward(nextState, nextStatement)
+      syncFutureVehicleCarry(nextState, nextStatement.vehicleId, nextPeriod)
     })
     notify('Путёвка удалена')
   }
@@ -115,7 +145,12 @@ export default function StatementView({
         </div>
         <aside className="workspace-side">
           <CheckPanel status={status} />
-          <CarryPanel statement={statement} onRefresh={refreshCarry} />
+          <CarryPanel
+            statement={statement}
+            autoCarry={autoCarryEnabled(state, vehicle.id)}
+            onAutoCarryChange={changeAutoCarry}
+            onRefresh={refreshCarry}
+          />
         </aside>
       </div>
       <TripModal
