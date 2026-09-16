@@ -1,10 +1,12 @@
 import { clone, num, reconcileCarryForward, sortTrips } from '../../lib/domain.js'
+import { insertionListOrder } from '../../lib/trips.js'
 import { tripFormErrors } from './tripFormValidation.js'
 
 export default function useTripActions({
   form,
   initialSnapshot,
   editingId,
+  insertionPosition = 'end',
   trip,
   state,
   period,
@@ -47,6 +49,7 @@ export default function useTripActions({
       vehicle,
       state,
       editingId,
+      insertionPosition,
     })
     if (errors.length) {
       setErrors(errors)
@@ -70,10 +73,14 @@ export default function useTripActions({
         )
         if (tripIndex >= 0) nextStatement.trips[tripIndex] = tripRecord
       } else {
+        tripRecord.listOrder = insertionListOrder(nextStatement.trips, insertionPosition)
         nextStatement.trips.push(tripRecord)
       }
 
       sortTrips(nextStatement)
+      if (!editingId && insertionPosition === 'start') {
+        syncFollowingTripStart(nextStatement, tripRecord.id, vehicle)
+      }
       reconcileCarryForward(nextState, nextStatement)
     })
 
@@ -108,4 +115,19 @@ export default function useTripActions({
   }
 
   return { requestClose, saveTrip, deleteTrip }
+}
+
+function syncFollowingTripStart(statement, insertedTripId, vehicle) {
+  const insertedIndex = statement.trips.findIndex(item => item.id === insertedTripId)
+  const insertedTrip = statement.trips[insertedIndex]
+  const followingTrip = statement.trips[insertedIndex + 1]
+  if (!insertedTrip || !followingTrip) return
+
+  const odometerEnd = num(insertedTrip.odoEnd)
+  if (odometerEnd !== null) followingTrip.odoStart = odometerEnd
+
+  if (vehicle?.hasMotohours) {
+    const motohoursEnd = num(insertedTrip.motohoursEnd)
+    if (motohoursEnd !== null) followingTrip.motohoursStart = motohoursEnd
+  }
 }

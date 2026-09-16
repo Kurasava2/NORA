@@ -11,7 +11,14 @@ const EMPTY_MATERIAL_ENTRY = {
   _calcSource: '',
 }
 
-export default function useTripMaterials({ state, statement, editingId, form, setForm }) {
+export default function useTripMaterials({
+  state,
+  statement,
+  editingId,
+  insertionPosition,
+  form,
+  setForm,
+}) {
   const [materialPick, setMaterialPick] = useState('')
 
   const setMaterialValue = useCallback((materialName, fieldName, value) => {
@@ -61,10 +68,11 @@ export default function useTripMaterials({ state, statement, editingId, form, se
         { ...previousForm, gsm: { ...(previousForm.gsm || {}) } },
         materialPick,
         editingId,
+        insertionPosition,
       ),
     )
     setMaterialPick('')
-  }, [editingId, materialPick, setForm, state, statement])
+  }, [editingId, insertionPosition, materialPick, setForm, state, statement])
 
   const removeMaterial = useCallback(materialName => {
     setForm(previousForm => {

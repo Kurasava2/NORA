@@ -14,6 +14,7 @@ export function tripFormErrors({
   vehicle,
   state,
   editingId,
+  insertionPosition = 'end',
 }) {
   const errors = basicTripErrors(form, {
     period,
@@ -35,7 +36,9 @@ export function tripFormErrors({
 
   const previousTrip = editingId
     ? predecessorTrip(statement, editingId)
-    : predecessorTrip(statement)
+    : insertionPosition === 'start'
+      ? null
+      : predecessorTrip(statement)
   const carrySource = previousTrip ? previousTrip.gsm || {} : statement.opening?.gsm || {}
 
   for (const [materialName, materialEntry] of Object.entries(carrySource)) {

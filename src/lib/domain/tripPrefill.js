@@ -14,7 +14,7 @@ export function predecessorTrip(statement, tripId = null) {
   return tripIndex > 0 ? trips[tripIndex - 1] : null
 }
 
-export function prefilledTrip(state, statement, period, editingTrip = null) {
+export function prefilledTrip(state, statement, period, editingTrip = null, position = 'end') {
   if (editingTrip) {
     const trip = clone(editingTrip)
     const vehicle = vehicleOf(state, statement.vehicleId)
@@ -29,7 +29,7 @@ export function prefilledTrip(state, statement, period, editingTrip = null) {
     return trip
   }
 
-  const previousTrip = predecessorTrip(statement)
+  const previousTrip = position === 'start' ? null : predecessorTrip(statement)
   const materialEntries = {}
   const carrySource = previousTrip ? previousTrip.gsm || {} : statement.opening?.gsm || {}
 
@@ -80,12 +80,21 @@ export function prefilledTrip(state, statement, period, editingTrip = null) {
   }
 }
 
-export function addTripMaterial(state, statement, trip, materialName, editingTripId = null) {
+export function addTripMaterial(
+  state,
+  statement,
+  trip,
+  materialName,
+  editingTripId = null,
+  position = 'end',
+) {
   if (!materialName || trip.gsm?.[materialName]) return trip
 
   const previousTrip = editingTripId
     ? predecessorTrip(statement, editingTripId)
-    : predecessorTrip(statement)
+    : position === 'start'
+      ? null
+      : predecessorTrip(statement)
   const previousEnd = previousTrip
     ? num(previousTrip.gsm?.[materialName]?.end)
     : num(statement.opening?.gsm?.[materialName])

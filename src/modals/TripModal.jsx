@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react'
-import { Button, Modal } from '../components/ui.jsx'
-import { motohoursWorked, num, prefilledTrip } from '../lib/domain.js'
+import { Modal } from '../components/ui.jsx'
+import { prefilledTrip } from '../lib/domain.js'
 import CalculationParametersSection from './trip/CalculationParametersSection.jsx'
-import SectionStep from './trip/SectionStep.jsx'
+import changeInsertionPosition from './trip/changeInsertionPosition.js'
 import TripBasicsSections from './trip/TripBasicsSections.jsx'
+import TripInsertionChoice from './trip/TripInsertionChoice.jsx'
+import TripModalFooter from './trip/TripModalFooter.jsx'
+import TripNoteSection from './trip/TripNoteSection.jsx'
+import tripMetrics from './trip/tripMetrics.js'
 import TripMaterialsSection from './trip/TripMaterialsSection.jsx'
 import useTripActions from './trip/useTripActions.js'
 import useTripAutoCalculation from './trip/useTripAutoCalculation.js'
 import useTripMaterials from './trip/useTripMaterials.js'
-
 export default function TripModal({
   open,
   trip,
@@ -24,9 +27,16 @@ export default function TripModal({
   const editingId = trip?.id || null
   const [form, setForm] = useState(() => prefilledTrip(state, statement, period, trip))
   const [errors, setErrors] = useState([])
+  const [insertionPosition, setInsertionPosition] = useState('end')
   const [initialSnapshot, setInitialSnapshot] = useState('')
-
-  const materials = useTripMaterials({ state, statement, editingId, form, setForm })
+  const materials = useTripMaterials({
+    state,
+    statement,
+    editingId,
+    insertionPosition,
+    form,
+    setForm,
+  })
   const autoCalculation = useTripAutoCalculation({
     state,
     statement,
@@ -36,17 +46,16 @@ export default function TripModal({
     setForm,
     notify,
   })
-
   useEffect(() => {
     if (!open) return
-    const initialForm = prefilledTrip(state, statement, period, trip)
+    const initialForm = prefilledTrip(state, statement, period, trip, 'end')
+    setInsertionPosition('end')
     setForm(initialForm)
     setInitialSnapshot(JSON.stringify(initialForm))
     materials.resetMaterialPick()
     autoCalculation.resetCalculationPreview()
     setErrors([])
   }, [open, editingId])
-
   useEffect(() => {
     if (!open) return
     const handleKeyboardShortcut = keyboardEvent => {
@@ -58,28 +67,15 @@ export default function TripModal({
     window.addEventListener('keydown', handleKeyboardShortcut)
     return () => window.removeEventListener('keydown', handleKeyboardShortcut)
   }, [open])
-
   const setTripField = (fieldName, value) => {
     setForm(previousForm => ({ ...previousForm, [fieldName]: value }))
   }
-
-  const odometerStart = num(form.odoStart)
-  const odometerEnd = num(form.odoEnd)
-  const mileage =
-    odometerStart !== null && odometerEnd !== null ? odometerEnd - odometerStart : null
-  const motohoursStart = num(form.motohoursStart)
-  const motohoursEnd = num(form.motohoursEnd)
-  const workedMotohours = motohoursWorked(form)
-  const legacyMotohours =
-    vehicle.hasMotohours &&
-    motohoursStart === null &&
-    motohoursEnd === null &&
-    num(form.motohours) !== null
-
+  const { mileage, workedMotohours, legacyMotohours } = tripMetrics(form, vehicle)
   const actions = useTripActions({
     form,
     initialSnapshot,
     editingId,
+    insertionPosition,
     trip,
     state,
     period,
@@ -91,10 +87,8 @@ export default function TripModal({
     onClose,
     setErrors,
   })
-
   const materialsStep = autoCalculation.calculationParameters.length ? 4 : 3
   const noteStep = materialsStep + 1
-
   return (
     <Modal
       open={open}
@@ -106,6 +100,29 @@ export default function TripModal({
     >
       <form onSubmit={actions.saveTrip} className="trip-modal-form">
         <div className="trip-modal-body">
+          {!editingId && (
+            <TripInsertionChoice
+              position={insertionPosition}
+              onChange={nextPosition =>
+                changeInsertionPosition({
+                  nextPosition,
+                  insertionPosition,
+                  form,
+                  initialSnapshot,
+                  state,
+                  statement,
+                  period,
+                  confirmAction,
+                  setInsertionPosition,
+                  setForm,
+                  setInitialSnapshot,
+                  resetMaterialPick: materials.resetMaterialPick,
+                  resetCalculationPreview: autoCalculation.resetCalculationPreview,
+                  setErrors,
+                })
+              }
+            />
+          )}
           {errors.length > 0 && (
             <div className="form-errors">
               <b>Путёвку нельзя сохранить:</b>
@@ -114,7 +131,6 @@ export default function TripModal({
               ))}
             </div>
           )}
-
           <TripBasicsSections
             form={form}
             setForm={setForm}
@@ -125,13 +141,11 @@ export default function TripModal({
             motohoursWorked={workedMotohours}
             legacyMotohours={legacyMotohours}
           />
-
           <CalculationParametersSection
             parameters={autoCalculation.calculationParameters}
             form={form}
             onChange={autoCalculation.setCalculationInput}
           />
-
           <TripMaterialsSection
             stepNumber={materialsStep}
             state={state}
@@ -139,30 +153,13 @@ export default function TripModal({
             materials={materials}
             autoCalculation={autoCalculation}
           />
-
-          <SectionStep number={String(noteStep)} title="Примечание" subtitle="необязательно">
-            <textarea
-              className="textarea"
-              value={form.note || ''}
-              onChange={event => setTripField('note', event.target.value)}
-            />
-          </SectionStep>
+          <TripNoteSection
+            stepNumber={noteStep}
+            value={form.note}
+            onChange={value => setTripField('note', value)}
+          />
         </div>
-
-        <div className="modal-actions sticky-actions">
-          {editingId ? (
-            <Button type="button" danger onClick={actions.deleteTrip}>Удалить</Button>
-          ) : (
-            <span />
-          )}
-          <div className="action-cluster">
-            <span className="shortcut">Ctrl + Enter</span>
-            <Button type="button" onClick={actions.requestClose}>Отмена</Button>
-            <Button id="trip-submit" primary type="submit">
-              {editingId ? 'Сохранить изменения' : 'Сохранить путёвку'}
-            </Button>
-          </div>
-        </div>
+        <TripModalFooter editingId={editingId} actions={actions} />
       </form>
     </Modal>
   )
