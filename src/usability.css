@@ -37,3 +37,13 @@ body{font-size:14px}
 
 @media(max-width:900px){.desktop-root{--modal-gap-side:10px;--modal-gap-top:10px;--modal-gap-bottom:10px}.modal-extra-wide{width:100%}}
 @media(max-height:620px){.desktop-root{--modal-gap-top:8px;--modal-gap-bottom:8px}.modal-head{padding-top:12px;padding-bottom:12px}.modal-actions{padding-top:10px;padding-bottom:10px}}
+
+/* Focused UI cleanup requested for the working desktop layout. */
+.page-head>div:first-child::before{display:none!important}
+.main-nav-top{margin-top:0;padding-top:2px}
+.modal-close{border:0;background:transparent;color:#cbd5e1}
+.modal-close:hover{background:#b91c1c;color:#fff}
+.material-rows{margin-top:14px}
+.trip-odo-field .field-label{font-size:11px}
+.report-month-picker{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:8px}
+.report-year-input{text-align:center;font-variant-numeric:tabular-nums}

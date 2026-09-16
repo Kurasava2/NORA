@@ -37,6 +37,7 @@ export { baseVehicle, vehicleOf, vehicleRateLabel } from './domain/vehicles.js'
 
 export {
   nonZero,
+  orderedMaterialNames,
   sortTrips,
   statementMaterialNames,
   syncStatementMaterials,

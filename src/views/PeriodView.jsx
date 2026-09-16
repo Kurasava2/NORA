@@ -10,11 +10,19 @@ import {
   periodYear,
   vehicleOf,
 } from '../lib/domain.js'
+import { pluralRu, RU_FORMS } from '../lib/ru.js'
 import PeriodFleetTable from './period/PeriodFleetTable.jsx'
 
+const periodUiState = new Map()
+
+function initialUiState(periodId) {
+  return periodUiState.get(periodId) || { query: '', statusFilter: 'all' }
+}
+
 export default function PeriodView({ state, period, mutate, onOpen, onExport, onHistory }) {
-  const [query, setQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const initial = initialUiState(period.id)
+  const [query, setQuery] = useState(initial.query)
+  const [statusFilter, setStatusFilter] = useState(initial.statusFilter)
   const deferredQuery = useDeferredValue(query)
   const fleetRows = useMemo(() => periodFleetRows(state, period), [state, period])
   const visibleRows = useMemo(() => {
@@ -36,6 +44,16 @@ export default function PeriodView({ state, period, mutate, onOpen, onExport, on
   )
   const renderedRows = useProgressiveRows(visibleRows, 18, 18)
 
+  const updateQuery = value => {
+    setQuery(value)
+    periodUiState.set(period.id, { query: value, statusFilter })
+  }
+
+  const updateStatusFilter = value => {
+    setStatusFilter(value)
+    periodUiState.set(period.id, { query, statusFilter: value })
+  }
+
   const openVehicle = vehicle => {
     const existingStatement = (period.statements || []).find(
       statement => statement.vehicleId === vehicle.id,
@@ -56,36 +74,53 @@ export default function PeriodView({ state, period, mutate, onOpen, onExport, on
     onOpen(newStatement)
   }
 
+  const totalVehicles = (state.vehicles || []).length
+  const readyCount = countsByStatus.ok || 0
+  const warningCount = countsByStatus.warn || 0
+  const errorCount = countsByStatus.bad || 0
+  const idleCount = countsByStatus.idle || 0
+
   return (
     <div className="page">
       <PageHead
         title={periodMonthName(period)}
-        subtitle={`${periodYear(period)} · ${fmtDate(period.start)} — ${fmtDate(period.end)} · контроль автопарка`}
+        subtitle={`${periodYear(period)} · ${fmtDate(period.start)} — ${fmtDate(period.end)}`}
         actions={<Button onClick={onExport}>Экспорт периода XLSX</Button>}
       />
       <div className="kpi-grid">
-        <Kpi value={countsByStatus.ok || 0} label="готово" tone="ok" />
-        <Kpi value={countsByStatus.warn || 0} label="с замечаниями" />
         <Kpi
-          value={countsByStatus.bad || 0}
-          label="с ошибками"
-          tone={countsByStatus.bad ? 'bad' : undefined}
+          value={totalVehicles}
+          label={pluralRu(totalVehicles, 'машина всего', 'машины всего', 'машин всего')}
         />
-        <Kpi value={countsByStatus.idle || 0} label="не ездили" tone="ok" />
-        <Kpi value={(state.vehicles || []).length} label="всего машин" />
+        <Kpi
+          value={readyCount}
+          label={pluralRu(readyCount, 'готова', 'готовы', 'готовы')}
+          tone="ok"
+        />
+        <Kpi value={warningCount} label={pluralRu(warningCount, ...RU_FORMS.warning)} />
+        <Kpi
+          value={errorCount}
+          label={pluralRu(errorCount, ...RU_FORMS.error)}
+          tone={errorCount ? 'bad' : undefined}
+        />
+        <Kpi
+          value={idleCount}
+          label={pluralRu(idleCount, 'не ездила', 'не ездили', 'не ездили')}
+          tone="ok"
+        />
       </div>
       <Card>
         <div className="filters">
           <input
             className="input search"
             value={query}
-            onChange={changeEvent => setQuery(changeEvent.target.value)}
+            onChange={changeEvent => updateQuery(changeEvent.target.value)}
             placeholder="Поиск по номеру, модели или рег. номеру…"
           />
           <select
             className="select"
             value={statusFilter}
-            onChange={changeEvent => setStatusFilter(changeEvent.target.value)}
+            onChange={changeEvent => updateStatusFilter(changeEvent.target.value)}
           >
             <option value="all">Все статусы</option>
             <option value="idle">Не ездили</option>

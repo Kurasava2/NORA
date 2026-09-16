@@ -6,6 +6,7 @@ import {
   nfmt,
   nonZero,
   num,
+  orderedMaterialNames,
   statementMaterialNames,
 } from '../domain.js'
 import { materialLinesText, numericTotal } from './materialText.js'
@@ -80,7 +81,7 @@ function materialRowHtml(materialName, materialTotal) {
 }
 
 export function materialRowsHtml(state, statement, statementTotals) {
-  return statementMaterialNames(statement)
+  return orderedMaterialNames(state, statementMaterialNames(statement))
     .filter(materialName => {
       const materialTotal = statementTotals[materialName]
       return [materialTotal.start, materialTotal.received, materialTotal.spent, materialTotal.end].some(

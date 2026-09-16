@@ -5,6 +5,7 @@ import {
   motohoursWorked,
   nonZero,
   num,
+  orderedMaterialNames,
   statementMaterialNames,
   totals,
 } from '../domain.js'
@@ -70,7 +71,7 @@ function totalRow(trips, vehicle, kilometerTotal, motohourValues, motohoursCompl
 }
 
 function materialRows(state, statement, statementTotals) {
-  return statementMaterialNames(statement)
+  return orderedMaterialNames(state, statementMaterialNames(statement))
     .filter(materialName => {
       const materialTotal = statementTotals[materialName]
       return [materialTotal.start, materialTotal.received, materialTotal.spent, materialTotal.end].some(

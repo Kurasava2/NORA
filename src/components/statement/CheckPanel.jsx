@@ -1,14 +1,14 @@
 import React from 'react'
-import { Badge, Card } from '../ui.jsx'
+import { Card } from '../ui.jsx'
 
 export default function CheckPanel({ status }) {
   const { errors, warnings } = status.check
+  if (!errors.length && !warnings.length) return null
 
   return (
     <Card className="side-card">
       <div className="side-card-head">
         <h3>Проверка</h3>
-        <Badge tone={status.tone}>{status.label}</Badge>
       </div>
       {errors.length > 0 && (
         <div className="check-list bad">
@@ -27,7 +27,6 @@ export default function CheckPanel({ status }) {
           ))}
         </div>
       )}
-      {!errors.length && !warnings.length && <div className="all-good">✓ Контроль пройден</div>}
     </Card>
   )
 }

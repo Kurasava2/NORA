@@ -66,3 +66,53 @@ test('settings use section navigation instead of one scrolling wall', () => {
   assert.match(settingsModalSource, /activeSection === 'print'/)
   assert.match(settingsCss, /\.settings-pane\{[^}]*overflow:auto/)
 })
+
+const modalSource = fs.readFileSync(
+  new URL('../src/components/ui/Modal.jsx', import.meta.url),
+  'utf8',
+)
+const homeViewSource = fs.readFileSync(new URL('../src/views/HomeView.jsx', import.meta.url), 'utf8')
+const periodViewSource = fs.readFileSync(new URL('../src/views/PeriodView.jsx', import.meta.url), 'utf8')
+const periodModalSource = fs.readFileSync(new URL('../src/modals/PeriodModal.jsx', import.meta.url), 'utf8')
+const dateControlSource = fs.readFileSync(
+  new URL('../src/components/ui/DateControl.jsx', import.meta.url),
+  'utf8',
+)
+const sidebarSource = fs.readFileSync(
+  new URL('../src/components/AppSidebar.jsx', import.meta.url),
+  'utf8',
+)
+const tripFooterSource = fs.readFileSync(
+  new URL('../src/modals/trip/TripModalFooter.jsx', import.meta.url),
+  'utf8',
+)
+const viewDataSource = fs.readFileSync(new URL('../src/lib/viewData.js', import.meta.url), 'utf8')
+
+test('modals render through document body so scroll containment cannot trap them in workspace', () => {
+  assert.match(modalSource, /createPortal\(modal, document\.body\)/)
+})
+
+test('period overview removes redundant chrome and lists older years first', () => {
+  assert.doesNotMatch(homeViewSource, /локальная база/)
+  assert.doesNotMatch(homeViewSource, /⇧ Создать месяц из книги/)
+  assert.match(homeViewSource, />Создать новый период</)
+  assert.match(viewDataSource, /Number\(firstYear\) - Number\(secondYear\)/)
+})
+
+test('period page keeps filters when returning from a statement and uses inflected counters', () => {
+  assert.match(periodViewSource, /const periodUiState = new Map\(\)/)
+  assert.match(periodViewSource, /pluralRu\(warningCount, \.\.\.RU_FORMS\.warning\)/)
+  assert.doesNotMatch(periodViewSource, /контроль автопарка/)
+})
+
+test('period month picker is custom and date controls have no redundant weekday caption', () => {
+  assert.match(periodModalSource, /ReportMonthPicker/)
+  assert.doesNotMatch(periodModalSource, /type="month"/)
+  assert.doesNotMatch(dateControlSource, /DATE_FORMATTER/)
+})
+
+test('sidebar and trip footer omit redundant branding and destructive duplicate action', () => {
+  assert.doesNotMatch(sidebarSource, /brand-mark/)
+  assert.doesNotMatch(sidebarSource, /РАСЧЁТНЫЕ ВЕДОМОСТИ ГСМ/)
+  assert.doesNotMatch(tripFooterSource, />Удалить</)
+})

@@ -10,6 +10,6 @@ export function groupPeriods(periods) {
   }
 
   return [...periodsByYear.entries()].sort(
-    ([firstYear], [secondYear]) => Number(secondYear) - Number(firstYear),
+    ([firstYear], [secondYear]) => Number(firstYear) - Number(secondYear),
   )
 }

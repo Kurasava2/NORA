@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Button, DateControl, Field, Modal } from '../components/ui.jsx'
+import ReportMonthPicker from './period/ReportMonthPicker.jsx'
 import { fmtDate, periodDisplayName, presetDates, uid } from '../lib/domain.js'
 
 function currentMonthValue() {
@@ -63,11 +64,9 @@ export default function PeriodModal({ open, onClose, state, mutate, onCreated, n
       <form onSubmit={submit}>
         <div className="modal-body grid-2">
           <Field label="Отчётный месяц">
-            <input
-              className="input"
-              type="month"
+            <ReportMonthPicker
               value={month}
-              onChange={changeEvent => changePreset(changeEvent.target.value, preset)}
+              onChange={nextMonth => changePreset(nextMonth, preset)}
             />
           </Field>
           <Field label="Схема периода">

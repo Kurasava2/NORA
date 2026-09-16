@@ -2,12 +2,6 @@ import React from 'react'
 import Button from './Button.jsx'
 import { classNames } from './classNames.js'
 
-const DATE_FORMATTER = new Intl.DateTimeFormat('ru-RU', {
-  weekday: 'short',
-  day: '2-digit',
-  month: 'short',
-})
-
 function isoDateFromLocalDate(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
     date.getDate(),
@@ -15,10 +9,6 @@ function isoDateFromLocalDate(date) {
 }
 
 export default function DateControl({ value, onChange, min, max, large = false }) {
-  const formattedWeekday = value
-    ? DATE_FORMATTER.format(new Date(`${value}T12:00:00`))
-    : 'дата не выбрана'
-
   const shiftDate = dayDelta => {
     if (!value) return value
 
@@ -45,7 +35,6 @@ export default function DateControl({ value, onChange, min, max, large = false }
           max={max}
           onChange={event => onChange(event.target.value)}
         />
-        <small>{formattedWeekday}</small>
       </div>
       <Button type="button" icon small onClick={() => onChange(shiftDate(1))} title="Следующий день">
         ›

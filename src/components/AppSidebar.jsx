@@ -31,15 +31,7 @@ export default function AppSidebar({
 
   return (
     <aside className="sidebar">
-      <div className="brand">
-        <div className="brand-mark">Г</div>
-        <div>
-          <b>Рабочая база</b>
-          <span>РАСЧЁТНЫЕ ВЕДОМОСТИ ГСМ</span>
-        </div>
-      </div>
-
-      <nav className="main-nav">
+      <nav className="main-nav main-nav-top">
         <NavButton active={viewName === 'home'} onClick={onHome} icon="⌂" label="Обзор периодов" />
         <NavButton
           active={viewName === 'vehicles' || viewName === 'history'}

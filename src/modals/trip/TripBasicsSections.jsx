@@ -4,7 +4,7 @@ import { nfmt } from '../../lib/domain.js'
 import SectionStep from './SectionStep.jsx'
 
 const liveValueClasses =
-  'flex min-h-[44px] items-baseline justify-center gap-1.5 rounded-[9px] border border-slate-700 bg-[#0b1220] px-[11px] py-[9px]'
+  'flex min-h-[54px] items-baseline justify-center gap-1.5 rounded-[9px] border border-slate-700 bg-[#0b1220] px-[11px] py-[9px]'
 
 function LiveCounterValue({ value, unit, invalid = false }) {
   return (
@@ -71,7 +71,7 @@ export default function TripBasicsSections({
 
       <SectionStep number="2" title="Одометр" subtitle="показания без разделителей тысяч">
         <div className="odo-grid">
-          <Field label="Перед выездом">
+          <Field className="trip-odo-field" label="Перед выездом">
             <input
               className="input input-number-xl"
               inputMode="decimal"
@@ -79,7 +79,7 @@ export default function TripBasicsSections({
               onChange={event => setTripField('odoStart', event.target.value)}
             />
           </Field>
-          <Field label="После выезда">
+          <Field className="trip-odo-field" label="После выезда">
             <input
               className="input input-number-xl"
               inputMode="decimal"
@@ -87,7 +87,7 @@ export default function TripBasicsSections({
               onChange={event => setTripField('odoEnd', event.target.value)}
             />
           </Field>
-          <Field className="[&_.field-label]:mb-1.5" label="Пройдено">
+          <Field className="trip-odo-field [&_.field-label]:mb-1.5" label="Пройдено">
             <LiveCounterValue
               value={
                 mileage === null

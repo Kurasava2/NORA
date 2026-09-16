@@ -73,12 +73,15 @@ function TripRow({ state, vehicle, trip, allErrors, onEdit, onDelete }) {
           <Button
             small
             danger
+            icon
+            title="Удалить путёвку"
+            aria-label="Удалить путёвку"
             onClick={clickEvent => {
               clickEvent.stopPropagation()
               onDelete(trip)
             }}
           >
-            × Удалить
+            ×
           </Button>
         </div>
       </td>

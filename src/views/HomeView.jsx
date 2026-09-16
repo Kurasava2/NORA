@@ -1,7 +1,7 @@
 import React, { useMemo, useRef } from 'react'
 import { Button, Empty, Kpi, PageHead } from '../components/ui.jsx'
 import { periodFleetRows } from '../lib/domain.js'
-import { countForm, pluralRu, RU_FORMS } from '../lib/ru.js'
+import { pluralRu, RU_FORMS } from '../lib/ru.js'
 import { groupPeriods } from '../lib/viewData.js'
 import PeriodYearSections from './home/PeriodYearSections.jsx'
 
@@ -59,7 +59,6 @@ export default function HomeView({
   )
   const groups = useMemo(() => groupPeriods(periods), [periods])
   const vehicleCount = (state.vehicles || []).length
-  const catalogCount = state.catalog.length
 
   const importSelectedFile = changeEvent => {
     const selectedFile = changeEvent.target.files?.[0]
@@ -71,7 +70,6 @@ export default function HomeView({
     <div className="page">
       <PageHead
         title="Расчётные периоды"
-        subtitle={`${countForm(vehicleCount, RU_FORMS.vehicle)} · ${countForm(catalogCount, RU_FORMS.type)} ГСМ · локальная база`}
         actions={(
           <>
             <input
@@ -81,8 +79,8 @@ export default function HomeView({
               accept=".xlsx,.xlsm"
               onChange={importSelectedFile}
             />
-            <Button onClick={() => fileInputRef.current?.click()}>⇧ Создать месяц из книги</Button>
-            <Button primary onClick={onNew}>＋ Новый период</Button>
+            <Button onClick={() => fileInputRef.current?.click()}>Создать месяц из книги</Button>
+            <Button primary onClick={onNew}>Создать новый период</Button>
           </>
         )}
       />

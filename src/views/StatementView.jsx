@@ -108,7 +108,7 @@ export default function StatementView({
         subtitle={`№ ${vehicle.reg} · ${periodMonthName(period)} ${periodYear(period)} · ${periodName(period)}`}
         actions={(
           <>
-            <Button onClick={onBack}>← К месяцу</Button>
+            <Button icon onClick={onBack} title="Назад" aria-label="Назад">←</Button>
             <Button onClick={onHistory}>История</Button>
             <Button onClick={onPreview}>Предпросмотр</Button>
             <Button onClick={onExport}>XLSX</Button>

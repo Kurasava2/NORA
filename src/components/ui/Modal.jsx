@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { classNames } from './classNames.js'
 
 const FOCUSABLE_SELECTOR = [
@@ -38,7 +39,6 @@ export default function Modal({
         closeHandlerRef.current?.()
         return
       }
-
       if (keyboardEvent.key !== 'Tab') return
 
       const focusableElements = getFocusableElements()
@@ -82,7 +82,7 @@ export default function Modal({
     if (mouseEvent.target === mouseEvent.currentTarget) onClose?.()
   }
 
-  return (
+  const modal = (
     <div
       className={classNames('modal-backdrop', backdropClassName)}
       onMouseDown={handleBackdropMouseDown}
@@ -117,4 +117,6 @@ export default function Modal({
       </div>
     </div>
   )
+
+  return createPortal(modal, document.body)
 }

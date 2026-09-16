@@ -1,7 +1,7 @@
-import { materialCellName, nfmt, nonZero, num, tripMaterialNames } from '../domain.js'
+import { materialCellName, nfmt, nonZero, num, orderedMaterialNames, tripMaterialNames } from '../domain.js'
 
 export function materialLinesText(state, trip, fieldName) {
-  return tripMaterialNames(trip)
+  return orderedMaterialNames(state, tripMaterialNames(trip))
     .map(materialName => {
       const value = num(trip.gsm?.[materialName]?.[fieldName])
       if (value === null || !nonZero(state, value)) return ''
