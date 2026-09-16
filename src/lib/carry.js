@@ -1,3 +1,4 @@
+import { smartBalance } from './calculations.js'
 import { num, toleranceOf } from './numbers.js'
 
 export function syncCarriedStart(entry, previousEnd, tolerance = 0.05) {
@@ -13,5 +14,10 @@ export function syncCarriedStart(entry, previousEnd, tolerance = 0.05) {
   }
 
   quantityEntry.start = previousEndValue
+  const autoTarget = quantityEntry._autoTarget || ''
+  if (autoTarget && autoTarget !== 'start') {
+    Object.assign(quantityEntry, smartBalance(quantityEntry, autoTarget))
+  }
+  if (autoTarget === 'start') quantityEntry._autoTarget = ''
   return quantityEntry
 }
