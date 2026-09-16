@@ -1,29 +1,36 @@
 import { useCallback, useEffect, useMemo } from 'react'
-import { refreshStatementOpening, statementOpeningIsCurrent } from '../../lib/domain.js'
+import {
+  refreshCarryPathToStatement,
+  statementCarryPathIsCurrent,
+} from '../../lib/domain.js'
 
 export default function useStatementCarry({ state, period, statement, mutate, notify }) {
-  const openingIsCurrent = useMemo(
-    () => statementOpeningIsCurrent(state, period, statement),
+  const carryIsCurrent = useMemo(
+    () => statementCarryPathIsCurrent(state, period, statement),
     [state, period, statement],
   )
 
   useEffect(() => {
-    if (openingIsCurrent) return
+    if (carryIsCurrent) return
 
     mutate(nextState => {
       const nextPeriod = nextState.periods.find(item => item.id === period.id)
       const nextStatement = nextPeriod?.statements?.find(item => item.id === statement.id)
-      refreshStatementOpening(nextState, nextPeriod, nextStatement)
+      refreshCarryPathToStatement(nextState, nextPeriod, nextStatement)
     })
-  }, [openingIsCurrent, mutate, period.id, statement.id])
+  }, [carryIsCurrent, mutate, period.id, statement.id])
 
   return useCallback(() => {
-    let changed = false
+    let updatedStatements = 0
     mutate(nextState => {
       const nextPeriod = nextState.periods.find(item => item.id === period.id)
       const nextStatement = nextPeriod?.statements?.find(item => item.id === statement.id)
-      changed = refreshStatementOpening(nextState, nextPeriod, nextStatement)
+      updatedStatements = refreshCarryPathToStatement(nextState, nextPeriod, nextStatement)
     })
-    notify(changed ? 'Перенос обновлён' : 'Перенос уже актуален')
+    notify(
+      updatedStatements
+        ? `Перенос обновлён · ведомостей в цепочке: ${updatedStatements}`
+        : 'Перенос уже актуален',
+    )
   }, [mutate, notify, period.id, statement.id])
 }
