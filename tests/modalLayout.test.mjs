@@ -29,3 +29,40 @@ test('trip modal performance mode avoids expensive scroll composition', () => {
   assert.match(tripPerformanceCss, /\.trip-modal-backdrop \.sticky-actions\{[^}]*position:static/)
   assert.match(tripPerformanceCss, /\.trip-modal-backdrop \.material-entry\{[^}]*contain:layout paint style/)
 })
+
+const scrollPerformanceCss = fs.readFileSync(
+  new URL('../src/scrollPerformance.css', import.meta.url),
+  'utf8',
+)
+const settingsModalSource = fs.readFileSync(
+  new URL('../src/modals/SettingsModal.jsx', import.meta.url),
+  'utf8',
+)
+const settingsCss = fs.readFileSync(new URL('../src/settings.css', import.meta.url), 'utf8')
+
+test('performance mode optimizes every application scroll container', () => {
+  for (const selector of [
+    '.main-content',
+    '.sidebar',
+    '.modal-body',
+    '.trip-modal-body',
+    '.settings-pane',
+    '.table-wrap',
+    '.paper-preview',
+    '.material-picker-grid',
+    '.recovery-screen',
+  ]) {
+    assert.match(scrollPerformanceCss, new RegExp(selector.replace('.', '\\.')))
+  }
+  assert.match(scrollPerformanceCss, /contain:paint/)
+  assert.match(scrollPerformanceCss, /scrollbar-gutter:stable/)
+})
+
+test('settings use section navigation instead of one scrolling wall', () => {
+  assert.match(settingsModalSource, /SettingsNavigation/)
+  assert.match(settingsModalSource, /activeSection === 'general'/)
+  assert.match(settingsModalSource, /activeSection === 'behavior'/)
+  assert.match(settingsModalSource, /activeSection === 'excel'/)
+  assert.match(settingsModalSource, /activeSection === 'print'/)
+  assert.match(settingsCss, /\.settings-pane\{[^}]*overflow:auto/)
+})
