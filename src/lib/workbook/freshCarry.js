@@ -1,5 +1,8 @@
 import { clone } from '../domain/defaults.js'
-import { refreshStatementOpening } from '../domain/autoCarry.js'
+import {
+  refreshCarryPathToStatement,
+  refreshPeriodCarry,
+} from '../domain/autoCarry.js'
 
 export function freshStatementContext(state, periodId, statementId) {
   const nextState = clone(state)
@@ -7,7 +10,7 @@ export function freshStatementContext(state, periodId, statementId) {
   const statement = period?.statements?.find(item => item.id === statementId)
   if (!period || !statement) return null
 
-  refreshStatementOpening(nextState, period, statement)
+  refreshCarryPathToStatement(nextState, period, statement)
   return { state: nextState, period, statement }
 }
 
@@ -16,8 +19,6 @@ export function freshPeriodContext(state, periodId) {
   const period = nextState.periods.find(item => item.id === periodId)
   if (!period) return null
 
-  for (const statement of period.statements || []) {
-    refreshStatementOpening(nextState, period, statement)
-  }
+  refreshPeriodCarry(nextState, period)
   return { state: nextState, period }
 }
