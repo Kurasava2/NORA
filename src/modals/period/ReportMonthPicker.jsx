@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 const MONTHS = [
   'Январь',
@@ -27,12 +27,28 @@ function monthValue(year, month) {
   return `${year}-${String(month).padStart(2, '0')}`
 }
 
+function validYear(value, fallback) {
+  const numericYear = Number(value)
+  if (!Number.isFinite(numericYear)) return fallback
+  return Math.min(9999, Math.max(1900, Math.trunc(numericYear)))
+}
+
 export default function ReportMonthPicker({ value, onChange }) {
   const parsed = parseMonth(value)
-  const setMonth = month => onChange(monthValue(parsed.year, Number(month)))
-  const setYear = year => {
-    const numericYear = Math.min(9999, Math.max(1900, Number(year) || parsed.year))
-    onChange(monthValue(numericYear, parsed.month))
+  const [yearText, setYearText] = useState(String(parsed.year))
+
+  useEffect(() => setYearText(String(parsed.year)), [parsed.year])
+
+  const commitYear = () => {
+    const nextYear = validYear(yearText, parsed.year)
+    setYearText(String(nextYear))
+    if (nextYear !== parsed.year) onChange(monthValue(nextYear, parsed.month))
+  }
+
+  const setMonth = month => {
+    const nextYear = validYear(yearText, parsed.year)
+    setYearText(String(nextYear))
+    onChange(monthValue(nextYear, Number(month)))
   }
 
   return (
@@ -44,12 +60,14 @@ export default function ReportMonthPicker({ value, onChange }) {
       </select>
       <input
         className="input report-year-input"
-        type="number"
-        min="1900"
-        max="9999"
+        type="text"
         inputMode="numeric"
-        value={parsed.year}
-        onChange={event => setYear(event.target.value)}
+        value={yearText}
+        onChange={event => setYearText(event.target.value.replace(/\D/g, '').slice(0, 4))}
+        onBlur={commitYear}
+        onKeyDown={event => {
+          if (event.key === 'Enter') commitYear()
+        }}
         aria-label="Год"
       />
     </div>

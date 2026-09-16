@@ -1,6 +1,6 @@
 /* Shared scroll/compositor optimizations for legacy Windows 7 PCs. */
 .performance-mode .modal-backdrop{
-  background:#05070c;
+  background:rgba(0,0,0,.84);
 }
 
 .performance-mode .modal-backdrop .modal{

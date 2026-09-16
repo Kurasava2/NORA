@@ -1,6 +1,6 @@
 /* Trip modal performance overrides for legacy / low-end Windows 7 PCs. */
 .performance-mode .trip-modal-backdrop{
-  background:#05070c;
+  background:rgba(0,0,0,.84);
 }
 
 .performance-mode .trip-modal-backdrop .modal{

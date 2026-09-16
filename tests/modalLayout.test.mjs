@@ -24,7 +24,7 @@ test('long modal forms scroll internally instead of escaping the window', () => 
 })
 
 test('trip modal performance mode avoids expensive scroll composition', () => {
-  assert.match(tripPerformanceCss, /\.performance-mode \.trip-modal-backdrop\{[^}]*background:#05070c/)
+  assert.match(tripPerformanceCss, /\.performance-mode \.trip-modal-backdrop\{[^}]*background:rgba\(0,0,0,\.84\)/)
   assert.match(tripPerformanceCss, /\.trip-modal-backdrop \.modal\{[^}]*box-shadow:none/)
   assert.match(tripPerformanceCss, /\.trip-modal-backdrop \.sticky-actions\{[^}]*position:static/)
   assert.match(tripPerformanceCss, /\.trip-modal-backdrop \.material-entry\{[^}]*contain:layout paint style/)
