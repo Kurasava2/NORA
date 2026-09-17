@@ -50,6 +50,9 @@ jobs:
           if (!(Test-Path "shdk-personnel-app-v0.6.0\package.json")) { throw "package.json missing" }
           if (!(Test-Path "shdk-personnel-app-v0.6.0\tsconfig.json")) { throw "tsconfig.json missing" }
 
+      - name: Apply source fixes
+        run: python shdk-build-overrides/patch_stroevaya.py
+
       - name: Setup Node.js 18
         uses: actions/setup-node@v4
         with:
