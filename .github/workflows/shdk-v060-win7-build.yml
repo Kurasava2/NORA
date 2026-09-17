@@ -1,0 +1,78 @@
+name: SHDK v0.6.0 Win7 x86
+
+on:
+  push:
+    branches:
+      - shdk-v060-win7-build
+    paths:
+      - '.github/workflows/shdk-v060-win7-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2019
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+
+      - name: Reconstruct source
+        shell: powershell
+        run: |
+          $parts = Get-ChildItem "shdk-build-payload\part*.txt" | Sort-Object Name
+          if ($parts.Count -ne 6) { throw "Expected 6 payload parts, got $($parts.Count)" }
+          $base64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
+          [IO.File]::WriteAllBytes("payload.tar.gz", [Convert]::FromBase64String($base64))
+          tar -xzf payload.tar.gz
+          if (!(Test-Path "shdk-personnel-app-v0.6.0\package.json")) { throw "Source reconstruction failed" }
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        working-directory: shdk-personnel-app-v0.6.0
+        run: npm install --include=optional
+
+      - name: Typecheck
+        working-directory: shdk-personnel-app-v0.6.0
+        run: npm run typecheck
+
+      - name: Tests
+        working-directory: shdk-personnel-app-v0.6.0
+        run: npm test
+
+      - name: Rebuild RocksDB for Electron 22 x86
+        working-directory: shdk-personnel-app-v0.6.0
+        shell: cmd
+        env:
+          npm_config_target: 22.3.27
+          npm_config_arch: ia32
+          npm_config_runtime: electron
+          npm_config_disturl: https://electronjs.org/headers
+        run: npm rebuild @salto-io/rocksdb --build-from-source
+
+      - name: Build portable Win7 x86
+        working-directory: shdk-personnel-app-v0.6.0
+        run: npm run dist:win7:x86
+
+      - name: Verify PE architecture and SHA256
+        working-directory: shdk-personnel-app-v0.6.0
+        shell: powershell
+        run: |
+          $exe = Get-Item "release\SHDK-Personnel-0.6.0-Win7-x86.exe"
+          $bytes = [IO.File]::ReadAllBytes($exe.FullName)
+          $peOffset = [BitConverter]::ToInt32($bytes, 0x3C)
+          $machine = [BitConverter]::ToUInt16($bytes, $peOffset + 4)
+          if ($machine -ne 0x14c) { throw ("Expected x86 PE machine 0x14c, got 0x{0:X}" -f $machine) }
+          Get-FileHash $exe.FullName -Algorithm SHA256
+
+      - name: Upload portable EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: SHDK-Personnel-0.6.0-Win7-x86
+          path: shdk-personnel-app-v0.6.0/release/SHDK-Personnel-0.6.0-Win7-x86.exe
+          if-no-files-found: error
+          retention-days: 30
