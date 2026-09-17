@@ -36,7 +36,7 @@ jobs:
           foreach ($name in $names) {
             $part = Get-Item (Join-Path "shdk-build-payload-v2" $name)
             $hash = (Get-FileHash $part.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-            if ($hash -ne $expected[$name]) { throw "Part hash mismatch: $name: $hash" }
+            if ($hash -ne $expected[$name]) { throw "Part hash mismatch: ${name}: $hash" }
             Write-Host "$name OK $hash"
             $parts += $part
           }
