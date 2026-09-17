@@ -3,7 +3,7 @@ import { num } from '../numbers.js'
 import { motohoursEnd } from '../vehicleMetrics.js'
 
 function materialNames(statement) {
-  const names = new Set()
+  const names = new Set(Object.keys(statement?.opening?.gsm || {}))
   for (const trip of statement?.trips || []) {
     for (const materialName of Object.keys(trip?.gsm || {})) names.add(materialName)
   }
@@ -11,10 +11,11 @@ function materialNames(statement) {
 }
 
 function materialTotals(statement, materialName) {
-  let start = null
+  const openingValue = num(statement?.opening?.gsm?.[materialName])
+  let start = openingValue
   let received = 0
   let spent = 0
-  let end = null
+  let end = openingValue
 
   for (const trip of statement?.trips || []) {
     const entry = trip?.gsm?.[materialName]
@@ -45,11 +46,36 @@ function tripNormAllocations(vehicle, trip, catalog) {
   for (const rule of result.rules || []) {
     if (rule.allocation === ALLOC_NONE) continue
     for (const allocation of rule.allocations || []) {
-      const previous = totals.get(allocation.material) || 0
-      totals.set(allocation.material, previous + Number(allocation.spent || 0))
+      totals.set(
+        allocation.material,
+        (totals.get(allocation.material) || 0) + Number(allocation.spent || 0),
+      )
     }
   }
   return totals
+}
+
+function tripMovements(vehicle, statement, materialName, catalog) {
+  const movements = []
+  for (let index = 0; index < (statement?.trips || []).length; index += 1) {
+    const trip = statement.trips[index]
+    const entry = trip?.gsm?.[materialName]
+    const norms = tripNormAllocations(vehicle, trip, catalog)
+    const norm = norms?.has(materialName) ? norms.get(materialName) : null
+    const received = num(entry?.received) || 0
+    const spent = num(entry?.spent) || 0
+    if (!entry && !received && !spent && !norm) continue
+    movements.push({
+      tripId: String(trip.id || ''),
+      date: String(trip.date || ''),
+      number: String(trip.number || ''),
+      order: index,
+      received,
+      spent,
+      norm,
+    })
+  }
+  return movements
 }
 
 function statementNorms(vehicle, statement, catalog) {
@@ -64,9 +90,23 @@ function statementNorms(vehicle, statement, catalog) {
   return totals
 }
 
-function lastTrip(statement) {
+function finalMetrics(statement) {
   const trips = statement?.trips || []
-  return trips.length ? trips[trips.length - 1] : null
+  if (trips.length) {
+    const finalTrip = trips[trips.length - 1]
+    return {
+      lastWaybillNumber: String(finalTrip?.number || ''),
+      lastWaybillDate: String(finalTrip?.date || ''),
+      odometerEnd: num(finalTrip?.odoEnd),
+      motohoursEnd: motohoursEnd(finalTrip),
+    }
+  }
+  return {
+    lastWaybillNumber: '',
+    lastWaybillDate: '',
+    odometerEnd: num(statement?.opening?.odo),
+    motohoursEnd: num(statement?.opening?.motohours),
+  }
 }
 
 export function buildDecodingSourceSnapshot(state, period) {
@@ -74,14 +114,13 @@ export function buildDecodingSourceSnapshot(state, period) {
   const rows = []
 
   for (const statement of period?.statements || []) {
-    if (!statement?.trips?.length) continue
     const vehicle = vehiclesById.get(statement.vehicleId) || {}
-    const finalTrip = lastTrip(statement)
     const norms = statementNorms(vehicle, statement, state?.catalog || [])
+    const metrics = finalMetrics(statement)
 
     for (const materialName of materialNames(statement)) {
-      const materialTotal = materialTotals(statement, materialName)
-      const norm = norms?.has(materialName) ? norms.get(materialName) : null
+      const total = materialTotals(statement, materialName)
+      const norm = norms?.has(materialName) ? norms.get(materialName) : total.spent === 0 ? 0 : null
       rows.push({
         statementId: statement.id,
         vehicleId: statement.vehicleId,
@@ -89,13 +128,11 @@ export function buildDecodingSourceSnapshot(state, period) {
         vehicleModel: String(vehicle.model || ''),
         vehicleReg: String(vehicle.reg || ''),
         materialName,
-        lastWaybillNumber: String(finalTrip?.number || ''),
-        lastWaybillDate: String(finalTrip?.date || ''),
-        odometerEnd: num(finalTrip?.odoEnd),
-        motohoursEnd: motohoursEnd(finalTrip),
-        ...materialTotal,
+        ...metrics,
+        ...total,
         norm,
-        variance: norm === null ? null : norm - materialTotal.spent,
+        variance: norm === null ? null : norm - total.spent,
+        trips: tripMovements(vehicle, statement, materialName, state?.catalog || []),
       })
     }
   }
@@ -131,5 +168,5 @@ export function decodingSourceFingerprint(snapshot) {
     hash ^= source.charCodeAt(index)
     hash = Math.imul(hash, 16777619)
   }
-  return `v1-${(hash >>> 0).toString(16).padStart(8, '0')}`
+  return `v2-${(hash >>> 0).toString(16).padStart(8, '0')}`
 }
