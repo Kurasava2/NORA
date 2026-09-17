@@ -1,156 +1,158 @@
 import { decodingId } from './id.js'
 import {
+  MOVEMENT_CARRY,
+  MOVEMENT_OPENING,
+  MOVEMENT_RECEIPT,
+  MOVEMENT_SURRENDERED,
+} from './model.js'
+import {
   decimalAdd,
-  decimalCanonical,
   decimalCompare,
   decimalSubtract,
   decimalSum,
 } from './decimal.js'
+import { allocationsForRow, movementsForRow } from './balances.js'
 
-export function rowAllocationKey(row) {
-  return `${row.statementId}::${row.materialName}`
-}
-
-export function allocationsForRow(decodingState, decodingId, row) {
-  return (decodingState?.allocations || []).filter(
-    allocation =>
-      allocation.decodingId === decodingId &&
-      allocation.statementId === row.statementId &&
-      allocation.materialName === row.materialName &&
-      allocation.kind === 'spent',
+function movementOrder(leftMovement, rightMovement) {
+  return (
+    String(leftMovement.date || '').localeCompare(String(rightMovement.date || '')) ||
+    waybillCompare(leftMovement.waybillNumber, rightMovement.waybillNumber) ||
+    String(leftMovement.id || '').localeCompare(String(rightMovement.id || ''))
   )
 }
 
-export function distributedLiters(decodingState, decodingId, row) {
-  return decimalSum(
-    allocationsForRow(decodingState, decodingId, row).map(allocation => allocation.liters),
-  )
+function waybillCompare(leftValue, rightValue) {
+  const leftNumber = Number(leftValue)
+  const rightNumber = Number(rightValue)
+  if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) return leftNumber - rightNumber
+  return String(leftValue || '').localeCompare(String(rightValue || ''), 'ru')
 }
 
-export function lotRemaining(decodingState, lotId, excludedDecodingId = null) {
-  const lot = (decodingState?.densityLots || []).find(candidateLot => candidateLot.id === lotId)
-  if (!lot) return null
-  const used = decimalSum(
-    (decodingState.allocations || [])
-      .filter(
-        allocation =>
-          allocation.lotId === lotId &&
-          allocation.kind === 'spent' &&
-          allocation.decodingId !== excludedDecodingId,
-      )
-      .map(allocation => allocation.liters),
-  )
-  return decimalSubtract(lot.volumeLiters, used)
+function movementBeforeTrip(movement, trip) {
+  if (!movement.date) return true
+  if (movement.date < trip.date) return true
+  if (movement.date > trip.date) return false
+  if (!movement.waybillNumber) return true
+  return waybillCompare(movement.waybillNumber, trip.number) <= 0
 }
 
-function availableLots(decodingState, document, materialName, manualAllocations) {
-  const manualByLot = new Map()
-  for (const allocation of manualAllocations) {
-    manualByLot.set(
-      allocation.lotId,
-      decimalAdd(manualByLot.get(allocation.lotId) || '0', allocation.liters),
-    )
+function addBalance(balances, density, liters) {
+  balances.set(density, decimalAdd(balances.get(density) || '0', liters) || '0')
+}
+
+function applyMovement(balances, movement) {
+  if ([MOVEMENT_OPENING, MOVEMENT_CARRY, MOVEMENT_RECEIPT].includes(movement.kind)) {
+    addBalance(balances, movement.density, movement.liters)
   }
-
-  return (decodingState.densityLots || [])
-    .filter(lot => lot.materialName === materialName && lot.date <= document.sourceSnapshot.end)
-    .map(lot => ({
-      lot,
-      remaining: decimalSubtract(
-        lotRemaining(decodingState, lot.id, document.id) || '0',
-        manualByLot.get(lot.id) || '0',
-      ),
-    }))
-    .filter(row => decimalCompare(row.remaining, '0') === 1)
-    .sort(
-      (leftRow, rightRow) =>
-        leftRow.lot.date.localeCompare(rightRow.lot.date) ||
-        leftRow.lot.createdAt.localeCompare(rightRow.lot.createdAt) ||
-        leftRow.lot.id.localeCompare(rightRow.lot.id),
-    )
+  if (movement.kind === MOVEMENT_SURRENDERED) {
+    addBalance(balances, movement.density, `-${movement.liters}`)
+  }
 }
 
-function allocateRow(row, targetLiters, lotRows, documentId) {
+function spendFromBalances(balances, liters, allocationBase) {
   const allocations = []
-  let remainingTarget = decimalCanonical(targetLiters, '0')
+  let remaining = String(liters || '0')
+  const candidates = [...balances.entries()]
+    .filter(([, balance]) => decimalCompare(balance, '0') === 1)
+    .sort((leftEntry, rightEntry) =>
+      decimalCompare(leftEntry[1], rightEntry[1]) ||
+      Number(leftEntry[0]) - Number(rightEntry[0]))
 
-  for (const lotRow of lotRows) {
-    if (decimalCompare(remainingTarget, '0') !== 1) break
-    if (row.lastWaybillDate && lotRow.lot.date > row.lastWaybillDate) continue
-    if (decimalCompare(lotRow.remaining, '0') !== 1) continue
-    const useAllLot = decimalCompare(lotRow.remaining, remainingTarget) <= 0
-    const liters = useAllLot ? lotRow.remaining : remainingTarget
+  for (const [density, balance] of candidates) {
+    if (decimalCompare(remaining, '0') !== 1) break
+    const useAll = decimalCompare(balance, remaining) <= 0
+    const used = useAll ? balance : remaining
     allocations.push({
+      ...allocationBase,
       id: decodingId(),
-      decodingId: documentId,
-      statementId: row.statementId,
-      vehicleId: row.vehicleId,
-      materialName: row.materialName,
-      lotId: lotRow.lot.id,
+      density,
+      liters: used,
       kind: 'spent',
-      liters,
       source: 'auto',
       updatedAt: new Date().toISOString(),
     })
-    lotRow.remaining = decimalSubtract(lotRow.remaining, liters)
-    remainingTarget = decimalSubtract(remainingTarget, liters)
+    balances.set(density, decimalSubtract(balance, used))
+    remaining = decimalSubtract(remaining, used)
   }
+  return { allocations, shortage: remaining }
+}
 
-  return { allocations, shortage: remainingTarget }
+function allocateSourceRow(decodingState, document, row) {
+  const balances = new Map()
+  const movements = movementsForRow(decodingState, document, row).sort(movementOrder)
+  const opening = movements.filter(movement =>
+    [MOVEMENT_OPENING, MOVEMENT_CARRY].includes(movement.kind))
+  opening.forEach(movement => applyMovement(balances, movement))
+  const timed = movements.filter(movement =>
+    ![MOVEMENT_OPENING, MOVEMENT_CARRY].includes(movement.kind))
+  let movementIndex = 0
+  const generated = []
+  const shortages = []
+
+  for (const trip of row.tripFlows || []) {
+    while (
+      movementIndex < timed.length &&
+      movementBeforeTrip(timed[movementIndex], trip)
+    ) {
+      applyMovement(balances, timed[movementIndex])
+      movementIndex += 1
+    }
+    if (Number(trip.spent || 0) <= 0) continue
+    const result = spendFromBalances(balances, String(trip.spent), {
+      decodingId: document.id,
+      statementId: row.statementId,
+      vehicleId: row.vehicleId,
+      materialName: row.materialName,
+      tripId: trip.tripId,
+      tripDate: trip.date,
+      waybillNumber: trip.number,
+    })
+    generated.push(...result.allocations)
+    if (decimalCompare(result.shortage, '0') === 1) {
+      shortages.push({ row, trip, liters: result.shortage })
+    }
+  }
+  return { generated, shortages }
 }
 
 export function autoAllocateMaterial(decodingState, document, materialName) {
   const current = decodingState.allocations || []
-  const kept = current.filter(
-    allocation =>
-      allocation.decodingId !== document.id ||
-      allocation.materialName !== materialName ||
-      allocation.source === 'manual',
-  )
-  const manual = kept.filter(
-    allocation => allocation.decodingId === document.id && allocation.materialName === materialName,
-  )
-  const lotRows = availableLots(decodingState, document, materialName, manual)
-  const rows = document.sourceSnapshot.rows
-    .filter(row => row.materialName === materialName && Number(row.spent) > 0)
-    .sort(
-      (leftRow, rightRow) =>
-        leftRow.lastWaybillDate.localeCompare(rightRow.lastWaybillDate) ||
-        leftRow.vehicleShortNo.localeCompare(rightRow.vehicleShortNo, 'ru'),
-    )
+  const kept = current.filter(allocation =>
+    allocation.decodingId !== document.id ||
+    allocation.materialName !== materialName ||
+    allocation.source === 'manual')
   const generated = []
   const shortages = []
 
-  for (const row of rows) {
-    const manualForRow = decimalSum(
-      manual.filter(allocation => allocation.statementId === row.statementId).map(item => item.liters),
-    )
-    const target = decimalSubtract(String(row.spent), manualForRow)
-    if (decimalCompare(target, '0') !== 1) continue
-    const result = allocateRow(row, target, lotRows, document.id)
-    generated.push(...result.allocations)
-    if (decimalCompare(result.shortage, '0') === 1) {
-      shortages.push({ row, liters: result.shortage })
-    }
+  for (const row of document.sourceSnapshot.rows || []) {
+    if (row.materialName !== materialName) continue
+    const manual = allocationsForRow({ ...decodingState, allocations: kept }, document, row)
+      .filter(allocation => allocation.source === 'manual')
+    if (manual.length) continue
+    const result = allocateSourceRow(decodingState, document, row)
+    generated.push(...result.generated)
+    shortages.push(...result.shortages)
   }
-
   return { allocations: [...kept, ...generated], shortages }
 }
 
-export function manualRowAllocations(document, row, valuesByLot) {
-  return Object.entries(valuesByLot || {})
-    .map(([lotId, litersValue]) => ({ lotId, liters: decimalCanonical(litersValue) }))
-    .filter(item => item.liters !== null && decimalCompare(item.liters, '0') === 1)
-    .map(item => ({
+export function manualRowAllocations(document, row, valuesByDensity) {
+  return Object.entries(valuesByDensity || {})
+    .filter(([, liters]) => decimalCompare(liters, '0') === 1)
+    .map(([density, liters]) => ({
       id: decodingId(),
       decodingId: document.id,
       statementId: row.statementId,
       vehicleId: row.vehicleId,
       materialName: row.materialName,
-      lotId: item.lotId,
+      density,
+      liters: String(liters).replace(',', '.'),
       kind: 'spent',
-      liters: item.liters,
       source: 'manual',
       updatedAt: new Date().toISOString(),
     }))
+}
+
+export function distributedLiters(decodingState, document, row) {
+  return decimalSum(allocationsForRow(decodingState, document, row).map(item => item.liters))
 }

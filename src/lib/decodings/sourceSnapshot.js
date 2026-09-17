@@ -15,19 +15,36 @@ function materialTotals(statement, materialName) {
   let received = 0
   let spent = 0
   let end = null
+  const tripFlows = []
 
   for (const trip of statement?.trips || []) {
     const entry = trip?.gsm?.[materialName]
     if (!entry) continue
     const startValue = num(entry.start)
+    const receivedValue = num(entry.received) || 0
+    const spentValue = num(entry.spent) || 0
     const endValue = num(entry.end)
     if (start === null && startValue !== null) start = startValue
-    received += num(entry.received) || 0
-    spent += num(entry.spent) || 0
+    received += receivedValue
+    spent += spentValue
     if (endValue !== null) end = endValue
+    tripFlows.push({
+      tripId: String(trip.id || trip.seq || `${trip.date}-${trip.number}`),
+      date: String(trip.date || ''),
+      number: String(trip.number || ''),
+      received: receivedValue,
+      spent: spentValue,
+    })
   }
 
-  return { start: start ?? 0, received, surrendered: 0, spent, end: end ?? 0 }
+  return {
+    start: start ?? 0,
+    received,
+    surrendered: 0,
+    spent,
+    end: end ?? 0,
+    tripFlows,
+  }
 }
 
 function tripNormAllocations(vehicle, trip, catalog) {
@@ -45,8 +62,10 @@ function tripNormAllocations(vehicle, trip, catalog) {
   for (const rule of result.rules || []) {
     if (rule.allocation === ALLOC_NONE) continue
     for (const allocation of rule.allocations || []) {
-      const previous = totals.get(allocation.material) || 0
-      totals.set(allocation.material, previous + Number(allocation.spent || 0))
+      totals.set(
+        allocation.material,
+        (totals.get(allocation.material) || 0) + Number(allocation.spent || 0),
+      )
     }
   }
   return totals
@@ -106,7 +125,6 @@ export function buildDecodingSourceSnapshot(state, period) {
       leftRow.materialName.localeCompare(rightRow.materialName, 'ru') ||
       leftRow.statementId.localeCompare(rightRow.statementId),
   )
-
   return {
     periodId: period?.id || null,
     reportMonth: period?.reportMonth || '',
@@ -131,5 +149,5 @@ export function decodingSourceFingerprint(snapshot) {
     hash ^= source.charCodeAt(index)
     hash = Math.imul(hash, 16777619)
   }
-  return `v1-${(hash >>> 0).toString(16).padStart(8, '0')}`
+  return `v2-${(hash >>> 0).toString(16).padStart(8, '0')}`
 }

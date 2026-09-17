@@ -2,21 +2,39 @@ import { decodingId } from './id.js'
 import { decodingSourceFingerprint } from './sourceSnapshot.js'
 
 export const DECODING_FORM_63 = 'form63'
+export const MOVEMENT_OPENING = 'opening'
+export const MOVEMENT_CARRY = 'carry'
+export const MOVEMENT_RECEIPT = 'receipt'
+export const MOVEMENT_SURRENDERED = 'surrendered'
 
 export const EMPTY_DECODING_STATE = {
   documents: [],
-  densityLots: [],
+  densityMovements: [],
   allocations: [],
   containers: [],
+  legacyDensityLots: [],
+  legacyAllocations: [],
 }
 
 export function normalizeDecodingState(value) {
   const source = value && typeof value === 'object' ? value : {}
+  const allocations = Array.isArray(source.allocations) ? source.allocations : []
+  const currentAllocations = allocations.filter(allocation => allocation?.density)
+  const oldAllocations = allocations.filter(allocation => !allocation?.density)
+
   return {
     documents: Array.isArray(source.documents) ? source.documents : [],
-    densityLots: Array.isArray(source.densityLots) ? source.densityLots : [],
-    allocations: Array.isArray(source.allocations) ? source.allocations : [],
+    densityMovements: Array.isArray(source.densityMovements) ? source.densityMovements : [],
+    allocations: currentAllocations,
     containers: Array.isArray(source.containers) ? source.containers : [],
+    legacyDensityLots: [
+      ...(Array.isArray(source.legacyDensityLots) ? source.legacyDensityLots : []),
+      ...(Array.isArray(source.densityLots) ? source.densityLots : []),
+    ],
+    legacyAllocations: [
+      ...(Array.isArray(source.legacyAllocations) ? source.legacyAllocations : []),
+      ...oldAllocations,
+    ],
   }
 }
 
@@ -41,16 +59,32 @@ export function createDecodingDocument(period, snapshot, mode = DECODING_FORM_63
   }
 }
 
-export function createDensityLot({ period, materialName, density, volume, date, sourceType, note }) {
+export function createDensityMovement({
+  period,
+  vehicleId,
+  materialName,
+  density,
+  liters,
+  date,
+  waybillNumber,
+  kind = MOVEMENT_RECEIPT,
+  note,
+  generated = false,
+  sourcePeriodId = null,
+}) {
   return {
     id: decodingId(),
+    periodId: period.id,
+    vehicleId,
     materialName,
     density: String(density || '').trim().replace(',', '.'),
-    volumeLiters: String(volume || '').trim().replace(',', '.'),
+    liters: String(liters || '').trim().replace(',', '.'),
     date: date || period.start,
-    sourceType: sourceType || 'receipt',
-    sourcePeriodId: period.id,
+    waybillNumber: String(waybillNumber || '').trim(),
+    kind,
     note: String(note || '').trim(),
+    generated: Boolean(generated),
+    sourcePeriodId,
     createdAt: new Date().toISOString(),
   }
 }

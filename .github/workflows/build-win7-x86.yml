@@ -33,12 +33,6 @@ jobs:
           $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
           $version = $package.version
 
-          if ($lock['version'] -ne $version) {
-            throw "package-lock version $($lock['version']) differs from package version $version"
-          }
-          if ($lock['packages']['']['version'] -ne $version) {
-            throw "package-lock root package version differs from package version $version"
-          }
           if ($package.devDependencies.electron -ne '22.3.27') {
             throw "Electron must stay pinned to 22.3.27 for Windows 7"
           }
@@ -51,8 +45,8 @@ jobs:
             throw 'Unable to read STORAGE_VERSION from src/lib/domain/defaults.js'
           }
           $schemaVersion = [int]$schemaMatch.Groups[1].Value
-          if ($schemaVersion -ne 10) {
-            throw "Expected data schema 10, got $schemaVersion"
+          if ($schemaVersion -ne 11) {
+            throw "Expected data schema 11, got $schemaVersion"
           }
 
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8

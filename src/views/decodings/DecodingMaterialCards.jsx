@@ -3,7 +3,12 @@ import { Badge, Card } from '../../components/ui.jsx'
 import { nfmt } from '../../lib/domain.js'
 import { documentMaterials, materialSummary } from '../../lib/decodings/selectors.js'
 
-export default function DecodingMaterialCards({ decodingState, document, selected, onSelect }) {
+export default function DecodingMaterialCards({
+  decodingState,
+  document,
+  selected,
+  onSelect,
+}) {
   const materials = documentMaterials(document)
 
   return (
@@ -22,13 +27,13 @@ export default function DecodingMaterialCards({ decodingState, document, selecte
               <div className="decoding-material-head">
                 <b>{materialName}</b>
                 <Badge tone={ready ? 'ok' : 'warn'}>
-                  {ready ? 'распределено' : `${nfmt(Math.abs(difference))} л`}
+                  {ready ? 'расход распределён' : `${nfmt(Math.abs(difference))} л`}
                 </Badge>
               </div>
               <div className="decoding-material-meta">
                 <span>{summary.machines} машин</span>
                 <span>{summary.densities} плотностей</span>
-                <span>{summary.lots} партий</span>
+                <span>{summary.receipts} выдач</span>
               </div>
               <div className="decoding-material-totals">
                 <span>Начало <b>{nfmt(summary.start)}</b></span>

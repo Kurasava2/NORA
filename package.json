@@ -1,6 +1,6 @@
 {
   "name": "gsm-vedomosti-win7",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "private": true,
   "type": "module",
   "description": "Расчётные ведомости ГСМ — Windows 7 desktop, EP-inspired interface, optimized for legacy PCs",

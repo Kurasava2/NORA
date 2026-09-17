@@ -3,7 +3,7 @@ import baseCatalog from '../../data/catalog.json' assert { type: 'json' }
 
 export const BASE_VEHICLES = baseVehicles
 export const BASE_CATALOG = baseCatalog
-export const STORAGE_VERSION = 10
+export const STORAGE_VERSION = 11
 
 export const DEFAULT_SETTINGS = {
   unit: 'Командир автомобильной роты войсковой части 98562',
@@ -27,7 +27,14 @@ export const DEFAULT_STATE = {
     ...vehicle,
     defaultMaterials: [...(vehicle.defaultMaterials || [])],
   })),
-  decoding: { documents: [], densityLots: [], allocations: [], containers: [] },
+  decoding: {
+    documents: [],
+    densityMovements: [],
+    allocations: [],
+    containers: [],
+    legacyDensityLots: [],
+    legacyAllocations: [],
+  },
   catalog: baseCatalog.map(material => ({
     ...material,
     aliases: [...(material.aliases || [])],
