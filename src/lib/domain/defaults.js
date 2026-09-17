@@ -1,5 +1,5 @@
-import baseVehicles from '../../data/vehicles.json'
-import baseCatalog from '../../data/catalog.json'
+import baseVehicles from '../../data/vehicles.json' assert { type: 'json' }
+import baseCatalog from '../../data/catalog.json' assert { type: 'json' }
 
 export const BASE_VEHICLES = baseVehicles
 export const BASE_CATALOG = baseCatalog
