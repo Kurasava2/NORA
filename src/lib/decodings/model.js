@@ -1,22 +1,41 @@
 import { decodingId } from './id.js'
+import { decimalCanonical } from './decimal.js'
 import { decodingSourceFingerprint } from './sourceSnapshot.js'
 
 export const DECODING_FORM_63 = 'form63'
+export const DENSITY_ENTRY_OPENING = 'opening'
+export const DENSITY_ENTRY_RECEIPT = 'receipt'
+export const DENSITY_ENTRY_SPENT = 'spent'
+export const DENSITY_ENTRY_SURRENDERED = 'surrendered'
+
+const EMPTY_LEGACY = { densityLots: [], allocations: [] }
 
 export const EMPTY_DECODING_STATE = {
   documents: [],
-  densityLots: [],
-  allocations: [],
+  entries: [],
   containers: [],
+  legacy: EMPTY_LEGACY,
+}
+
+function arrayOf(value) {
+  return Array.isArray(value) ? value : []
 }
 
 export function normalizeDecodingState(value) {
   const source = value && typeof value === 'object' ? value : {}
+  const legacy = source.legacy && typeof source.legacy === 'object' ? source.legacy : {}
   return {
-    documents: Array.isArray(source.documents) ? source.documents : [],
-    densityLots: Array.isArray(source.densityLots) ? source.densityLots : [],
-    allocations: Array.isArray(source.allocations) ? source.allocations : [],
-    containers: Array.isArray(source.containers) ? source.containers : [],
+    documents: arrayOf(source.documents),
+    entries: arrayOf(source.entries),
+    containers: arrayOf(source.containers),
+    legacy: {
+      densityLots: arrayOf(legacy.densityLots).length
+        ? arrayOf(legacy.densityLots)
+        : arrayOf(source.densityLots),
+      allocations: arrayOf(legacy.allocations).length
+        ? arrayOf(legacy.allocations)
+        : arrayOf(source.allocations),
+    },
   }
 }
 
@@ -41,16 +60,34 @@ export function createDecodingDocument(period, snapshot, mode = DECODING_FORM_63
   }
 }
 
-export function createDensityLot({ period, materialName, density, volume, date, sourceType, note }) {
+export function createDensityEntry({
+  period,
+  kind,
+  vehicleId,
+  statementId,
+  tripId,
+  waybillNumber,
+  date,
+  materialName,
+  density,
+  liters,
+  note,
+}) {
+  const now = new Date().toISOString()
   return {
     id: decodingId(),
-    materialName,
-    density: String(density || '').trim().replace(',', '.'),
-    volumeLiters: String(volume || '').trim().replace(',', '.'),
+    periodId: period.id,
+    kind,
+    vehicleId: String(vehicleId || ''),
+    statementId: String(statementId || ''),
+    tripId: String(tripId || ''),
+    waybillNumber: String(waybillNumber || '').trim(),
     date: date || period.start,
-    sourceType: sourceType || 'receipt',
-    sourcePeriodId: period.id,
+    materialName: String(materialName || ''),
+    density: decimalCanonical(density, ''),
+    liters: decimalCanonical(liters, '0'),
     note: String(note || '').trim(),
-    createdAt: new Date().toISOString(),
+    createdAt: now,
+    updatedAt: now,
   }
 }
