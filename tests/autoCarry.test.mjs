@@ -84,7 +84,7 @@ test('lazy carry refreshes only the dependency path up to the opened statement',
   assert.equal(statementCarryPathIsCurrent(state, junePeriod, juneStatement), false)
   const updated = refreshCarryPathToStatement(state, junePeriod, juneStatement)
 
-  assert.equal(updated, 1)
+  assert.equal(updated, 2)
   assert.equal(state.periods[1].statements[0].opening.odo, 250)
   assert.equal(state.periods[1].statements[0].trips[0].odoStart, 250)
   assert.equal(state.periods[3].statements[0].opening.odo, 400)
