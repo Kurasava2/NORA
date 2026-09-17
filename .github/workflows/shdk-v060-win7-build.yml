@@ -24,8 +24,12 @@ jobs:
           if ($parts.Count -ne 6) { throw "Expected 6 payload parts, got $($parts.Count)" }
           $base64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
           [IO.File]::WriteAllBytes("payload.tar.gz", [Convert]::FromBase64String($base64))
-          tar -xzf payload.tar.gz
+          $hash = (Get-FileHash "payload.tar.gz" -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne "009cedaff152bb62048513b4335f2f3e9e69c6a6292cc656f3e541f42e058d77") { throw "Payload SHA256 mismatch: $hash" }
+          python -c "import tarfile; tarfile.open('payload.tar.gz','r:gz').extractall('.')"
+          if ($LASTEXITCODE -ne 0) { throw "Python tar extraction failed" }
           if (!(Test-Path "shdk-personnel-app-v0.6.0\package.json")) { throw "Source reconstruction failed" }
+          if (!(Test-Path "shdk-personnel-app-v0.6.0\tsconfig.json")) { throw "Source reconstruction incomplete: tsconfig.json missing" }
 
       - name: Setup Node.js 18
         uses: actions/setup-node@v4
