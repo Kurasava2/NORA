@@ -1,5 +1,6 @@
-import { distributedLiters, lotRemaining } from './allocations.js'
-import { decimalNumber } from './decimal.js'
+import { decimalNumber, decimalSum } from './decimal.js'
+import { buildMaterialLedger, densityBlocks } from './ledger.js'
+import { DENSITY_ENTRY_OPENING, DENSITY_ENTRY_RECEIPT } from './model.js'
 
 export function documentMaterials(document) {
   return [...new Set((document?.sourceSnapshot?.rows || []).map(row => row.materialName))]
@@ -10,9 +11,8 @@ export function materialSourceRows(document, materialName) {
   return (document?.sourceSnapshot?.rows || []).filter(row => row.materialName === materialName)
 }
 
-export function materialSummary(decodingState, document, materialName) {
-  const rows = materialSourceRows(document, materialName)
-  const totals = rows.reduce(
+function sourceTotals(rows) {
+  return rows.reduce(
     (summary, row) => ({
       start: summary.start + Number(row.start || 0),
       received: summary.received + Number(row.received || 0),
@@ -24,48 +24,76 @@ export function materialSummary(decodingState, document, materialName) {
     }),
     { start: 0, received: 0, surrendered: 0, spent: 0, norm: 0, normKnown: true, end: 0 },
   )
-  const distributed = rows.reduce(
-    (sum, row) => sum + Number(distributedLiters(decodingState, document.id, row) || 0),
-    0,
-  )
-  const lots = (decodingState?.densityLots || []).filter(lot => lot.materialName === materialName)
-  const densities = new Set(lots.map(lot => lot.density).filter(Boolean))
+}
 
+function ledgerTotal(rows, fieldName) {
+  return decimalNumber(decimalSum(rows.map(row => row[fieldName] ?? '0'))) || 0
+}
+
+export function materialSummary(state, document, materialName) {
+  const sourceRows = materialSourceRows(document, materialName)
+  const totals = sourceTotals(sourceRows)
+  const ledger = buildMaterialLedger(state, document, materialName)
+  const densities = new Set(ledger.rows.map(row => row.density))
   return {
     ...totals,
-    distributed,
-    machines: new Set(rows.map(row => row.vehicleId)).size,
-    lots: lots.length,
+    allocatedStart: ledgerTotal(ledger.rows, 'start'),
+    allocatedReceived: ledgerTotal(ledger.rows, 'received'),
+    allocatedSpent: ledgerTotal(ledger.rows, 'spent'),
+    allocatedEnd: ledgerTotal(ledger.rows, 'end'),
+    machines: new Set(sourceRows.map(row => row.vehicleId)).size,
     densities: densities.size,
+    receiptCount: (state.decoding?.entries || []).filter(entry =>
+      entry.periodId === document.periodId &&
+      entry.materialName === materialName &&
+      entry.kind === DENSITY_ENTRY_RECEIPT,
+    ).length,
   }
 }
 
-export function documentStats(decodingState, document, validation) {
+export function documentStats(state, document, validation) {
   const materials = documentMaterials(document)
+  const densityKeys = new Set()
+  for (const materialName of materials) {
+    for (const block of densityBlocks(state, document, materialName)) {
+      densityKeys.add(`${materialName}::${block.density}`)
+    }
+  }
   const rows = document?.sourceSnapshot?.rows || []
-  const densities = new Set(
-    (decodingState?.densityLots || [])
-      .filter(lot => materials.includes(lot.materialName))
-      .map(lot => `${lot.materialName}::${lot.density}`),
-  )
   return {
     machines: new Set(rows.map(row => row.vehicleId)).size,
     materials: materials.length,
-    densities: densities.size,
+    densities: densityKeys.size,
     errors: validation?.errors?.length || 0,
   }
 }
 
-export function materialLots(decodingState, materialName) {
-  return (decodingState?.densityLots || [])
-    .filter(lot => lot.materialName === materialName)
-    .map(lot => ({
-      ...lot,
-      remaining: lotRemaining(decodingState, lot.id),
-      remainingNumber: decimalNumber(lotRemaining(decodingState, lot.id)),
-    }))
+export function receiptsForMaterial(state, document, materialName) {
+  return (state.decoding?.entries || [])
+    .filter(entry =>
+      entry.periodId === document.periodId &&
+      entry.materialName === materialName &&
+      entry.kind === DENSITY_ENTRY_RECEIPT,
+    )
     .sort(
-      (leftLot, rightLot) =>
-        leftLot.date.localeCompare(rightLot.date) || leftLot.createdAt.localeCompare(rightLot.createdAt),
+      (leftEntry, rightEntry) =>
+        leftEntry.date.localeCompare(rightEntry.date) ||
+        leftEntry.waybillNumber.localeCompare(rightEntry.waybillNumber, 'ru') ||
+        leftEntry.createdAt.localeCompare(rightEntry.createdAt),
+    )
+}
+
+export function densityInputsForMaterial(state, document, materialName) {
+  return (state.decoding?.entries || [])
+    .filter(entry =>
+      entry.periodId === document.periodId &&
+      entry.materialName === materialName &&
+      [DENSITY_ENTRY_OPENING, DENSITY_ENTRY_RECEIPT].includes(entry.kind),
+    )
+    .sort(
+      (leftEntry, rightEntry) =>
+        leftEntry.date.localeCompare(rightEntry.date) ||
+        leftEntry.waybillNumber.localeCompare(rightEntry.waybillNumber, 'ru') ||
+        leftEntry.createdAt.localeCompare(rightEntry.createdAt),
     )
 }
