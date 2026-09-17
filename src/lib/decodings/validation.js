@@ -1,49 +1,112 @@
-import { distributedLiters, lotRemaining } from './allocations.js'
-import { decimalCompare, decimalNumber, decimalSubtract } from './decimal.js'
+import {
+  DENSITY_ENTRY_RECEIPT,
+} from './model.js'
+import {
+  decimalNumber,
+  decimalSubtract,
+  decimalSum,
+} from './decimal.js'
+import { entriesForRow } from './entries.js'
+import { buildMaterialLedger } from './ledger.js'
 
 function differs(leftValue, rightValue, tolerance) {
   const difference = decimalNumber(decimalSubtract(String(leftValue), String(rightValue)))
   return difference === null || Math.abs(difference) > tolerance
 }
 
-export function validateDecoding(decodingState, document, tolerance = 0.05) {
-  const errors = []
-  const warnings = []
-  if (!document) return { errors: ['Расшифровка не сформирована.'], warnings, ok: false }
+function sumField(rows, fieldName) {
+  return decimalSum((rows || []).map(row => row[fieldName] ?? '0'))
+}
 
-  for (const row of document.sourceSnapshot.rows || []) {
-    const expectedEnd =
-      Number(row.start) + Number(row.received) - Number(row.surrendered || 0) - Number(row.spent)
-    if (Math.abs(expectedEnd - Number(row.end)) > tolerance) {
-      errors.push(`${row.vehicleShortNo} · ${row.materialName}: не сходится исходный баланс.`)
-    }
+function differenceMessage(expected, actual) {
+  const delta = decimalNumber(decimalSubtract(String(expected), String(actual))) || 0
+  return delta > 0
+    ? `не распределено ${Math.abs(delta)} л`
+    : `распределено лишних ${Math.abs(delta)} л`
+}
 
-    const distributed = distributedLiters(decodingState, document.id, row)
-    if (differs(distributed, row.spent, tolerance)) {
-      const delta = decimalSubtract(String(row.spent), distributed)
-      const action = decimalCompare(delta, '0') === -1 ? 'распределено лишних' : 'не распределено'
-      errors.push(`${row.vehicleShortNo} · ${row.materialName}: ${action} ${Math.abs(Number(delta))} л.`)
-    }
-  }
+function validateReceiptTrips(decodingState, document, sourceRow, tolerance, errors, warnings) {
+  const receipts = entriesForRow(
+    decodingState,
+    document.periodId,
+    sourceRow,
+    DENSITY_ENTRY_RECEIPT,
+  )
+  const sourceTrips = sourceRow.trips || []
 
-  for (const lot of decodingState.densityLots || []) {
-    const remaining = lotRemaining(decodingState, lot.id)
-    if (remaining !== null && decimalCompare(remaining, '0') === -1) {
+  for (const trip of sourceTrips) {
+    const linked = receipts.filter(entry => entry.tripId === trip.tripId)
+    if (!linked.length && Number(trip.received || 0) === 0) continue
+    const actual = decimalSum(linked.map(entry => entry.liters))
+    if (differs(actual, trip.received || 0, tolerance)) {
       errors.push(
-        `${lot.materialName} · ρ ${lot.density}: партия перерасходована на ${decimalSubtract('0', remaining)} л.`,
+        `${sourceRow.vehicleShortNo} · ${sourceRow.materialName} · путёвка №${trip.number || '—'}: ` +
+        `${differenceMessage(trip.received || 0, actual)} по раздаточной.`,
       )
     }
   }
 
-  for (const allocation of decodingState.allocations || []) {
-    if (allocation.decodingId !== document.id) continue
-    const sourceRowExists = document.sourceSnapshot.rows.some(
-      sourceRow =>
-        sourceRow.statementId === allocation.statementId &&
-        sourceRow.materialName === allocation.materialName,
-    )
-    if (!sourceRowExists) warnings.push('Есть распределение без соответствующей строки ведомости.')
+  const knownTripIds = new Set(sourceTrips.map(trip => trip.tripId))
+  for (const receipt of receipts) {
+    if (receipt.tripId && !knownTripIds.has(receipt.tripId)) {
+      warnings.push(
+        `${sourceRow.vehicleShortNo} · ${sourceRow.materialName}: выдача №${receipt.waybillNumber || '—'} ` +
+        'не привязана к путёвке текущего снимка.',
+      )
+    }
+  }
+}
+
+function validateSourceRow(state, document, sourceRow, ledgerRows, tolerance, errors, warnings) {
+  const expectedEnd =
+    Number(sourceRow.start) + Number(sourceRow.received) -
+    Number(sourceRow.surrendered || 0) - Number(sourceRow.spent)
+  if (Math.abs(expectedEnd - Number(sourceRow.end)) > tolerance) {
+    errors.push(`${sourceRow.vehicleShortNo} · ${sourceRow.materialName}: не сходится исходная ведомость.`)
   }
 
-  return { errors, warnings, ok: errors.length === 0 }
+  const checks = [
+    ['start', 'sourceStart', sourceRow.start, 'начало'],
+    ['received', 'sourceReceived', sourceRow.received, 'получено'],
+    ['spent', 'sourceSpent', sourceRow.spent, 'расход'],
+    ['end', 'sourceEnd', sourceRow.end, 'остаток'],
+  ]
+  for (const [fieldName, , expected, label] of checks) {
+    const actual = sumField(ledgerRows, fieldName)
+    if (differs(actual, expected || 0, tolerance)) {
+      errors.push(
+        `${sourceRow.vehicleShortNo} · ${sourceRow.materialName}: ${label} — ` +
+        `${differenceMessage(expected || 0, actual)} по плотностям.`,
+      )
+    }
+  }
+
+  if (sourceRow.norm !== null) {
+    const norm = sumField(ledgerRows, 'norm')
+    if (differs(norm, sourceRow.norm, tolerance)) {
+      warnings.push(`${sourceRow.vehicleShortNo} · ${sourceRow.materialName}: норма по плотностям не совпадает.`)
+    }
+  }
+  validateReceiptTrips(state.decoding, document, sourceRow, tolerance, errors, warnings)
+}
+
+export function validateDecoding(state, document, tolerance = 0.05) {
+  const errors = []
+  const warnings = []
+  if (!document) return { errors: ['Расшифровка не сформирована.'], warnings, ok: false }
+  const materials = [...new Set((document.sourceSnapshot?.rows || []).map(row => row.materialName))]
+
+  for (const materialName of materials) {
+    const ledger = buildMaterialLedger(state, document, materialName)
+    for (const issue of ledger.issues) {
+      errors.push(`${issue.sourceRow.vehicleShortNo} · ${materialName}: ${issue.message}`)
+    }
+    const sourceRows = document.sourceSnapshot.rows.filter(row => row.materialName === materialName)
+    for (const sourceRow of sourceRows) {
+      const rows = ledger.rows.filter(row => row.statementId === sourceRow.statementId)
+      validateSourceRow(state, document, sourceRow, rows, tolerance, errors, warnings)
+    }
+  }
+
+  return { errors: [...new Set(errors)], warnings: [...new Set(warnings)], ok: errors.length === 0 }
 }
