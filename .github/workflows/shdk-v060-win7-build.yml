@@ -21,14 +21,14 @@ jobs:
         shell: powershell
         run: |
           $expected = @{
-            "part00.txt" = "a86d089495a7d30e6fea8533b5b0de0c3652d6966b7363508ded901373cee19c"
-            "part01.txt" = "f11ca19820d6a1599312136102c77370817095190352217cb34eeac3c3d82ef2"
-            "part02.txt" = "2c3c523b1f16fccc7027685dad5393bd00dc1e4cec9f9901e38899de52412734"
-            "part03.txt" = "fc70acc23a6158394695555483756a367384175cf192697a58cf8cab45a9a97f"
-            "part04.txt" = "2d557792bfae0e1de4b2311154616b211f28d5e22308e9939183e7bb02da0e39"
-            "part05.txt" = "360fca58495154599a1ad17f07fa2484e11529b807b7d4b9992a13717aa2ff0b"
-            "part06.txt" = "de478371268b57f4874eff05aae3cddc5345970e33294b02d28d413bccd40ae2"
-            "part07.txt" = "f714415492090141149a1423cefe0d9b6df1fea4a8c673ce20944a3c5d8f029b"
+            "part00.txt" = "f3e3a4b19aaca0d08949a694333062db6cbd0b94317e9b6f0ec24bba47526203"
+            "part01.txt" = "bfa8e6e9c9a8726d9de97d2a10f54cb4f9ed71f09625cb16f457bb0b77bdda7b"
+            "part02.txt" = "a84cc0cdd50f9009dc584bc572dea7236056dce01aa896b63955558b02af6faf"
+            "part03.txt" = "629ff5d794a5d752f2032f00dc6748a81d6aa3e39cda3c8c8bf473e45ac57344"
+            "part04.txt" = "18226b85b2aaa4b3555780119cefbd69b15b0771d87a7e3675f7223a033bd2f5"
+            "part05.txt" = "925cdf7b61f4479c9ced3afae6a325fec19629d34b1108cedcb0096af484b414"
+            "part06.txt" = "58dc005f5e58f32e4c62fc3d05a0c17fd425d0224d71dfcfba3b316d0e5d249d"
+            "part07.txt" = "17ec33015d4aedc158653c75dc274c186e8d558653bf29987b733162307cd499"
           }
           $parts = Get-ChildItem "shdk-build-payload-v2\part*.txt" | Sort-Object Name
           if ($parts.Count -ne 8) { throw "Expected 8 payload parts, got $($parts.Count)" }
