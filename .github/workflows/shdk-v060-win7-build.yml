@@ -27,15 +27,18 @@ jobs:
             "part03.txt" = "629ff5d794a5d752f2032f00dc6748a81d6aa3e39cda3c8c8bf473e45ac57344"
             "part04.txt" = "18226b85b2aaa4b3555780119cefbd69b15b0771d87a7e3675f7223a033bd2f5"
             "part05.txt" = "925cdf7b61f4479c9ced3afae6a325fec19629d34b1108cedcb0096af484b414"
-            "part06.txt" = "58dc005f5e58f32e4c62fc3d05a0c17fd425d0224d71dfcfba3b316d0e5d249d"
+            "part06a.txt" = "e71fb3ab30c2f6de1d34026d4cbd871228059e80f92493e31b69a280277d3fe1"
+            "part06b.txt" = "b7c9881ccac21d78220cba8c328b680f8137c7104827e150baf97bf94c913340"
             "part07.txt" = "17ec33015d4aedc158653c75dc274c186e8d558653bf29987b733162307cd499"
           }
-          $parts = Get-ChildItem "shdk-build-payload-v2\part*.txt" | Sort-Object Name
-          if ($parts.Count -ne 8) { throw "Expected 8 payload parts, got $($parts.Count)" }
-          foreach ($part in $parts) {
+          $names = @("part00.txt","part01.txt","part02.txt","part03.txt","part04.txt","part05.txt","part06a.txt","part06b.txt","part07.txt")
+          $parts = @()
+          foreach ($name in $names) {
+            $part = Get-Item (Join-Path "shdk-build-payload-v2" $name)
             $hash = (Get-FileHash $part.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-            if ($hash -ne $expected[$part.Name]) { throw "Part hash mismatch: $($part.Name): $hash" }
-            Write-Host "$($part.Name) OK $hash"
+            if ($hash -ne $expected[$name]) { throw "Part hash mismatch: $name: $hash" }
+            Write-Host "$name OK $hash"
+            $parts += $part
           }
           $base64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
           [IO.File]::WriteAllBytes("payload.tar.xz", [Convert]::FromBase64String($base64))
