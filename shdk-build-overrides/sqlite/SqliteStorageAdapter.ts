@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Database, SqlJsStatic } from 'sql.js';
-import type { BatchOperation, StorageAdapter, StorageEntry, StorageNamespace } from '../../shdk-personnel-app-v0.6.0/src/storage/StorageAdapter';
+import type { BatchOperation, StorageAdapter, StorageEntry, StorageNamespace } from './StorageAdapter';
 
 const TABLES: Record<StorageNamespace, string> = {
   meta: 'meta', persons: 'persons', units: 'units', positions: 'positions', assignments: 'assignments',
