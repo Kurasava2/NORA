@@ -17,19 +17,35 @@ jobs:
       - name: Checkout build branch
         uses: actions/checkout@v4
 
-      - name: Reconstruct source
+      - name: Reconstruct verified source
         shell: powershell
         run: |
-          $parts = Get-ChildItem "shdk-build-payload\part*.txt" | Sort-Object Name
-          if ($parts.Count -ne 6) { throw "Expected 6 payload parts, got $($parts.Count)" }
+          $expected = @{
+            "part00.txt" = "a86d089495a7d30e6fea8533b5b0de0c3652d6966b7363508ded901373cee19c"
+            "part01.txt" = "f11ca19820d6a1599312136102c77370817095190352217cb34eeac3c3d82ef2"
+            "part02.txt" = "2c3c523b1f16fccc7027685dad5393bd00dc1e4cec9f9901e38899de52412734"
+            "part03.txt" = "fc70acc23a6158394695555483756a367384175cf192697a58cf8cab45a9a97f"
+            "part04.txt" = "2d557792bfae0e1de4b2311154616b211f28d5e22308e9939183e7bb02da0e39"
+            "part05.txt" = "360fca58495154599a1ad17f07fa2484e11529b807b7d4b9992a13717aa2ff0b"
+            "part06.txt" = "de478371268b57f4874eff05aae3cddc5345970e33294b02d28d413bccd40ae2"
+            "part07.txt" = "f714415492090141149a1423cefe0d9b6df1fea4a8c673ce20944a3c5d8f029b"
+          }
+          $parts = Get-ChildItem "shdk-build-payload-v2\part*.txt" | Sort-Object Name
+          if ($parts.Count -ne 8) { throw "Expected 8 payload parts, got $($parts.Count)" }
+          foreach ($part in $parts) {
+            $hash = (Get-FileHash $part.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($hash -ne $expected[$part.Name]) { throw "Part hash mismatch: $($part.Name): $hash" }
+            Write-Host "$($part.Name) OK $hash"
+          }
           $base64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
-          [IO.File]::WriteAllBytes("payload.tar.gz", [Convert]::FromBase64String($base64))
-          $hash = (Get-FileHash "payload.tar.gz" -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($hash -ne "009cedaff152bb62048513b4335f2f3e9e69c6a6292cc656f3e541f42e058d77") { throw "Payload SHA256 mismatch: $hash" }
-          python -c "import tarfile; tarfile.open('payload.tar.gz','r:gz').extractall('.')"
-          if ($LASTEXITCODE -ne 0) { throw "Python tar extraction failed" }
-          if (!(Test-Path "shdk-personnel-app-v0.6.0\package.json")) { throw "Source reconstruction failed" }
-          if (!(Test-Path "shdk-personnel-app-v0.6.0\tsconfig.json")) { throw "Source reconstruction incomplete: tsconfig.json missing" }
+          [IO.File]::WriteAllBytes("payload.tar.xz", [Convert]::FromBase64String($base64))
+          $payloadHash = (Get-FileHash "payload.tar.xz" -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($payloadHash -ne "79329bf0db97ceb95601db8d9d0f1694837a52367fd1c08928fece8cbdb19fce") { throw "Payload SHA256 mismatch: $payloadHash" }
+          Write-Host "payload.tar.xz OK $payloadHash"
+          tar -xJf payload.tar.xz
+          if ($LASTEXITCODE -ne 0) { throw "tar extraction failed" }
+          if (!(Test-Path "shdk-personnel-app-v0.6.0\package.json")) { throw "package.json missing" }
+          if (!(Test-Path "shdk-personnel-app-v0.6.0\tsconfig.json")) { throw "tsconfig.json missing" }
 
       - name: Setup Node.js 18
         uses: actions/setup-node@v4
