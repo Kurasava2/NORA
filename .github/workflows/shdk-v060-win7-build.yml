@@ -1,4 +1,4 @@
-name: SHDK v0.6.0 Win7 x86
+name: SHDK v0.7.0 Win7 x86 SQLite
 
 on:
   push:
@@ -47,11 +47,12 @@ jobs:
           Write-Host "payload.tar.xz OK $payloadHash"
           tar -xJf payload.tar.xz
           if ($LASTEXITCODE -ne 0) { throw "tar extraction failed" }
-          if (!(Test-Path "shdk-personnel-app-v0.6.0\package.json")) { throw "package.json missing" }
-          if (!(Test-Path "shdk-personnel-app-v0.6.0\tsconfig.json")) { throw "tsconfig.json missing" }
 
-      - name: Apply source fixes
-        run: python shdk-build-overrides/patch_stroevaya.py
+      - name: Apply parser and SQLite patches
+        shell: powershell
+        run: |
+          python shdk-build-overrides/patch_stroevaya.py
+          python shdk-build-overrides/patch_sqlite.py
 
       - name: Setup Node.js 18
         uses: actions/setup-node@v4
@@ -60,35 +61,57 @@ jobs:
 
       - name: Install dependencies
         working-directory: shdk-personnel-app-v0.6.0
-        run: npm install --include=optional
+        run: npm install
+
+      - name: Verify RocksDB is gone
+        working-directory: shdk-personnel-app-v0.6.0
+        shell: powershell
+        run: |
+          if (Test-Path "node_modules\@salto-io\rocksdb") { throw "RocksDB dependency is still present" }
+          if (!(Test-Path "node_modules\sql.js\dist\sql-asm.js")) { throw "sql.js asm build is missing" }
+          Write-Host "SQLite/sql.js storage dependency OK; no RocksDB package installed."
 
       - name: Typecheck
         working-directory: shdk-personnel-app-v0.6.0
         run: npm run typecheck
 
-      - name: Tests
+      - name: Tests including SQLite persistence
         working-directory: shdk-personnel-app-v0.6.0
         run: npm test
-
-      - name: Rebuild RocksDB for Electron 22 x86
-        working-directory: shdk-personnel-app-v0.6.0
-        shell: cmd
-        env:
-          npm_config_target: 22.3.27
-          npm_config_arch: ia32
-          npm_config_runtime: electron
-          npm_config_disturl: https://electronjs.org/headers
-        run: npm rebuild @salto-io/rocksdb --build-from-source
 
       - name: Build portable Win7 x86
         working-directory: shdk-personnel-app-v0.6.0
         run: npm run dist:win7:x86
 
-      - name: Verify PE architecture and SHA256
+      - name: Runtime smoke test unpacked app
         working-directory: shdk-personnel-app-v0.6.0
         shell: powershell
         run: |
-          $exe = Get-Item "release\SHDK-Personnel-0.6.0-Win7-x86.exe"
+          $exe = Get-ChildItem "release\win-ia32-unpacked" -Filter "*.exe" | Where-Object { $_.Name -notmatch 'elevate|uninstall' } | Select-Object -First 1
+          if (!$exe) { throw "Unpacked application EXE not found" }
+          Write-Host "Launching $($exe.FullName)"
+          $process = Start-Process -FilePath $exe.FullName -ArgumentList "--disable-gpu" -PassThru
+          Start-Sleep -Seconds 8
+          if ($process.HasExited) {
+            Write-Host "Application exited early with code $($process.ExitCode)"
+            Get-ChildItem $env:APPDATA -Recurse -Filter startup.log -ErrorAction SilentlyContinue | ForEach-Object {
+              Write-Host "---- $($_.FullName) ----"
+              Get-Content $_.FullName -Raw
+            }
+            throw "Runtime smoke test failed: application exited during startup"
+          }
+          $db = Get-ChildItem $env:APPDATA -Recurse -Filter personnel.sqlite -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (!$db) { Stop-Process -Id $process.Id -Force; throw "Application stayed alive but personnel.sqlite was not created" }
+          $header = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($db.FullName), 0, 15)
+          if ($header -ne "SQLite format 3") { Stop-Process -Id $process.Id -Force; throw "Database is not a SQLite file: $header" }
+          Write-Host "Runtime OK; SQLite database created at $($db.FullName)"
+          Stop-Process -Id $process.Id -Force
+
+      - name: Verify portable PE architecture and SHA256
+        working-directory: shdk-personnel-app-v0.6.0
+        shell: powershell
+        run: |
+          $exe = Get-Item "release\SHDK-Personnel-0.7.0-Win7-x86.exe"
           $bytes = [IO.File]::ReadAllBytes($exe.FullName)
           $peOffset = [BitConverter]::ToInt32($bytes, 0x3C)
           $machine = [BitConverter]::ToUInt16($bytes, $peOffset + 4)
@@ -98,7 +121,7 @@ jobs:
       - name: Upload portable EXE
         uses: actions/upload-artifact@v4
         with:
-          name: SHDK-Personnel-0.6.0-Win7-x86
-          path: shdk-personnel-app-v0.6.0/release/SHDK-Personnel-0.6.0-Win7-x86.exe
+          name: SHDK-Personnel-0.7.0-Win7-x86-SQLite
+          path: shdk-personnel-app-v0.6.0/release/SHDK-Personnel-0.7.0-Win7-x86.exe
           if-no-files-found: error
           retention-days: 30
