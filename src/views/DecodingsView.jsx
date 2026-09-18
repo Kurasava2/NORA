@@ -1,30 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Badge, Button, Kpi, PageHead } from '../components/ui.jsx'
 import DensityMovementModal from '../modals/decoding/DensityMovementModal.jsx'
-import { autoAllocateMaterial } from '../lib/decodings/allocations.js'
 import { replaceCarryMovements } from '../lib/decodings/balances.js'
-import {
-  createDecodingDocument,
-  createDensityMovement,
-  decodingDocument,
-} from '../lib/decodings/model.js'
+import { createDecodingDocument, decodingDocument } from '../lib/decodings/model.js'
 import { documentMaterials, documentStats, materialSourceRows } from '../lib/decodings/selectors.js'
-import {
-  buildDecodingSourceSnapshot,
-  decodingSourceFingerprint,
-} from '../lib/decodings/sourceSnapshot.js'
+import { buildDecodingSourceSnapshot, decodingSourceFingerprint } from '../lib/decodings/sourceSnapshot.js'
 import { validateDecoding } from '../lib/decodings/validation.js'
 import { periodDisplayName, sortedPeriods } from '../lib/domain.js'
 import DecodingDensityTable from './decodings/DecodingDensityTable.jsx'
 import DecodingMaterialCards from './decodings/DecodingMaterialCards.jsx'
 import DecodingMovements from './decodings/DecodingMovements.jsx'
 import DecodingSourceTable from './decodings/DecodingSourceTable.jsx'
+import useDensityMovementEditor from './decodings/useDensityMovementEditor.js'
 
 export default function DecodingsView({ state, mutate, notify, confirmAction }) {
   const periods = useMemo(() => sortedPeriods(state), [state])
   const [periodId, setPeriodId] = useState(periods[0]?.id || '')
   const [selectedMaterial, setSelectedMaterial] = useState('')
-  const [movementModalOpen, setMovementModalOpen] = useState(false)
   const period = periods.find(candidatePeriod => candidatePeriod.id === periodId) || periods[0]
   const document = period ? decodingDocument(state, period.id) : null
   const materials = documentMaterials(document)
@@ -34,6 +26,9 @@ export default function DecodingsView({ state, mutate, notify, confirmAction }) 
   )
   const stats = documentStats(state.decoding, document, validation)
   const sourceRows = materialSourceRows(document, selectedMaterial)
+  const movementEditor = useDensityMovementEditor({
+    period, document, materialName: selectedMaterial, mutate, notify, confirmAction,
+  })
 
   useEffect(() => {
     if (!period && periods[0]) setPeriodId(periods[0].id)
@@ -58,7 +53,7 @@ export default function DecodingsView({ state, mutate, notify, confirmAction }) 
     if (!period || !document) return
     const shouldRefresh = await confirmAction({
       title: 'Обновить данные из ведомостей?',
-      message: 'Получения по раздаточной сохранятся. Автораспределение расхода потребуется запустить заново.',
+      message: 'Получения по раздаточной сохранятся. Автораспределение расхода будет пересчитано.',
       confirmText: 'Обновить',
     })
     if (!shouldRefresh) return
@@ -81,52 +76,6 @@ export default function DecodingsView({ state, mutate, notify, confirmAction }) 
     const liveSnapshot = buildDecodingSourceSnapshot(state, period)
     return decodingSourceFingerprint(liveSnapshot) !== document.sourceFingerprint
   }, [state, period, document])
-
-  const addMovement = movementForm => {
-    mutate(nextState => {
-      nextState.decoding.densityMovements.push(
-        createDensityMovement({
-          period,
-          materialName: selectedMaterial,
-          ...movementForm,
-        }),
-      )
-    })
-    setMovementModalOpen(false)
-    notify('Запись раздаточной ведомости сохранена.')
-  }
-
-  const deleteMovement = async movement => {
-    const approved = await confirmAction({
-      title: 'Удалить запись плотности?',
-      message: 'Будет удалена только эта ручная запись. Автомобильная ведомость не изменится.',
-      confirmText: 'Удалить',
-      danger: true,
-    })
-    if (!approved) return
-    mutate(nextState => {
-      nextState.decoding.densityMovements = nextState.decoding.densityMovements
-        .filter(item => item.id !== movement.id)
-    })
-  }
-
-  const runAuto = () => {
-    if (!document || !selectedMaterial) return
-    let shortages = []
-    mutate(nextState => {
-      const nextDocument = nextState.decoding.documents.find(item => item.id === document.id)
-      replaceCarryMovements(nextState.decoding, nextDocument)
-      const result = autoAllocateMaterial(nextState.decoding, nextDocument, selectedMaterial)
-      nextState.decoding.allocations = result.allocations
-      shortages = result.shortages
-    })
-    notify(
-      shortages.length
-        ? `Расход распределён частично: не хватило известных плотностей в ${shortages.length} путёвках.`
-        : 'Расход распределён по доступным плотностям.',
-      Boolean(shortages.length),
-    )
-  }
 
   return (
     <div className="page page-wide">
@@ -154,10 +103,18 @@ export default function DecodingsView({ state, mutate, notify, confirmAction }) 
           {selectedMaterial && (
             <div className="decoding-workspace">
               <div className="decoding-actions">
-                <Button primary onClick={runAuto}>Распределить расход</Button>
-                <Button onClick={() => setMovementModalOpen(true)}>＋ Запись раздаточной</Button>
+                <Button primary onClick={movementEditor.runAuto}>Пересчитать расход</Button>
+                <Button onClick={movementEditor.openNew}>＋ Запись раздаточной</Button>
               </div>
-              <DecodingMovements decodingState={state.decoding} document={document} materialName={selectedMaterial} sourceRows={sourceRows} onAdd={() => setMovementModalOpen(true)} onDelete={deleteMovement} />
+              <DecodingMovements
+                decodingState={state.decoding}
+                document={document}
+                materialName={selectedMaterial}
+                sourceRows={sourceRows}
+                onAdd={movementEditor.openNew}
+                onEdit={movementEditor.openEdit}
+                onDelete={movementEditor.remove}
+              />
               <DecodingSourceTable decodingState={state.decoding} document={document} materialName={selectedMaterial} />
               <DecodingDensityTable decodingState={state.decoding} document={document} materialName={selectedMaterial} />
             </div>
@@ -171,7 +128,16 @@ export default function DecodingsView({ state, mutate, notify, confirmAction }) 
         </>
       )}
       {!document && period && <div className="empty decoding-empty"><b>Расшифровка ещё не создана</b><span>Сформируйте её из автомобильных ведомостей за {periodDisplayName(period)}.</span></div>}
-      <DensityMovementModal open={movementModalOpen} onClose={() => setMovementModalOpen(false)} period={period} materialName={selectedMaterial} sourceRows={sourceRows} onSave={addMovement} notify={notify} />
+      <DensityMovementModal
+        open={movementEditor.open}
+        onClose={movementEditor.close}
+        period={period}
+        materialName={selectedMaterial}
+        sourceRows={sourceRows}
+        movement={movementEditor.editingMovement}
+        onSave={movementEditor.save}
+        notify={notify}
+      />
     </div>
   )
 }
