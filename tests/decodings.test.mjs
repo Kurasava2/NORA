@@ -176,3 +176,19 @@ test('old party data is preserved as legacy instead of silently discarded', () =
   assert.equal(state.legacyAllocations.length, 1)
   assert.equal(state.allocations.length, 0)
 })
+
+
+test('surrendered density movement reduces the available density balance', async () => {
+  const { densityBalanceRows } = await import('../src/lib/decodings/balances.js')
+  const row = sourceRow({ start: 100, received: 0, surrendered: 20, spent: 0, end: 80, tripFlows: [] })
+  const doc = document('d1', 'p1', '2026-04-01', '2026-04-30', [row])
+  const state = normalizeDecodingState({
+    densityMovements: [
+      movement({ density: '0.827', liters: '100', kind: 'opening' }),
+      movement({ density: '0.827', liters: '20', kind: 'surrendered', date: '2026-04-15' }),
+    ],
+  })
+  const balances = densityBalanceRows(state, doc, row)
+  assert.equal(balances[0].surrendered, '20')
+  assert.equal(balances[0].end, '80')
+})
