@@ -1,0 +1,79 @@
+name: SQLite Win7 x86 compatibility spike
+
+on:
+  push:
+    branches:
+      - gsm-v155-sqlite-spike
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sqlite-ia32:
+    runs-on: windows-2022
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: npm
+
+      - name: Install project as ia32
+        shell: pwsh
+        env:
+          npm_config_arch: ia32
+        run: npm ci --no-audit --no-fund
+
+      - name: Install SQLite candidate as ia32
+        shell: pwsh
+        env:
+          npm_config_arch: ia32
+        run: npm install --no-save --no-audit --no-fund @vscode/sqlite3@5.1.14-vscode
+
+      - name: Verify Electron is ia32
+        shell: pwsh
+        run: |
+          $env:ELECTRON_RUN_AS_NODE = '1'
+          $arch = & '.\node_modules\electron\dist\electron.exe' -p "process.arch"
+          if ($arch.Trim() -ne 'ia32') {
+            throw "Expected Electron process.arch=ia32, got $arch"
+          }
+
+      - name: Verify SQLite native binary is PE32 i386
+        shell: pwsh
+        run: |
+          $binary = Get-ChildItem 'node_modules/@vscode/sqlite3' -Recurse -Filter 'node_sqlite3.node' | Select-Object -First 1
+          if (-not $binary) {
+            throw 'node_sqlite3.node was not found'
+          }
+
+          $stream = [IO.File]::OpenRead($binary.FullName)
+          $reader = New-Object IO.BinaryReader($stream)
+          $stream.Seek(0x3c, [IO.SeekOrigin]::Begin) | Out-Null
+          $peOffset = $reader.ReadInt32()
+          $stream.Seek($peOffset + 4, [IO.SeekOrigin]::Begin) | Out-Null
+          $machine = $reader.ReadUInt16()
+          $reader.Close()
+          $stream.Close()
+
+          if ($machine -ne 0x014c) {
+            throw ('Expected SQLite PE32/i386 machine 0x014c, got 0x{0:X4}' -f $machine)
+          }
+
+          Write-Host "SQLite binary: $($binary.FullName)"
+          Write-Host ('PE machine: 0x{0:X4}' -f $machine)
+
+      - name: Run SQLite inside Electron 22 x86
+        shell: pwsh
+        run: |
+          $env:ELECTRON_RUN_AS_NODE = '1'
+          & '.\node_modules\electron\dist\electron.exe' 'scripts/sqlite-spike.cjs'
+          if ($LASTEXITCODE -ne 0) {
+            throw "SQLite Electron probe failed with exit code $LASTEXITCODE"
+          }
