@@ -15,8 +15,7 @@ export default function DecodingMaterialCards({
     <div className="decoding-material-grid">
       {materials.map(materialName => {
         const summary = materialSummary(decodingState, document, materialName)
-        const difference = summary.spent - summary.distributed
-        const ready = Math.abs(difference) <= 0.05
+        const ready = summary.mismatches === 0
         return (
           <button
             className={`decoding-material-card ${selected === materialName ? 'selected' : ''}`}
@@ -27,7 +26,7 @@ export default function DecodingMaterialCards({
               <div className="decoding-material-head">
                 <b>{materialName}</b>
                 <Badge tone={ready ? 'ok' : 'warn'}>
-                  {ready ? 'расход распределён' : `${nfmt(Math.abs(difference))} л`}
+                  {ready ? 'сходится' : `${summary.mismatches} машин не сходится`}
                 </Badge>
               </div>
               <div className="decoding-material-meta">
