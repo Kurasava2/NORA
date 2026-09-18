@@ -24,10 +24,7 @@ jobs:
           node-version: '18'
           cache: npm
 
-      - name: Install project as ia32
-        shell: pwsh
-        env:
-          npm_config_arch: ia32
+      - name: Install exact project dependencies
         run: npm ci --no-audit --no-fund
 
       - name: Install SQLite candidate as ia32
@@ -36,13 +33,29 @@ jobs:
           npm_config_arch: ia32
         run: npm install --no-save --no-audit --no-fund @vscode/sqlite3@5.1.14-vscode
 
+      - name: Download Electron 22.3.27 ia32
+        shell: pwsh
+        run: |
+          $zipPath = node -e "const { downloadArtifact } = require('@electron/get'); downloadArtifact({ version: '22.3.27', artifactName: 'electron', platform: 'win32', arch: 'ia32' }).then(path => process.stdout.write(path)).catch(error => { console.error(error); process.exit(1) })"
+          if (-not (Test-Path $zipPath)) {
+            throw "Electron ia32 archive not found: $zipPath"
+          }
+          $target = Join-Path $env:RUNNER_TEMP 'electron-22.3.27-ia32'
+          New-Item -ItemType Directory -Force $target | Out-Null
+          Expand-Archive -Path $zipPath -DestinationPath $target -Force
+          "electronPath=$target\electron.exe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
       - name: Verify Electron is ia32
         shell: pwsh
         run: |
           $env:ELECTRON_RUN_AS_NODE = '1'
-          $arch = & '.\node_modules\electron\dist\electron.exe' -p "process.arch"
+          $arch = & $env:electronPath -p "process.arch"
           if ($arch.Trim() -ne 'ia32') {
             throw "Expected Electron process.arch=ia32, got $arch"
+          }
+          $version = & $env:electronPath -p "process.versions.electron"
+          if ($version.Trim() -ne '22.3.27') {
+            throw "Expected Electron 22.3.27, got $version"
           }
 
       - name: Verify SQLite native binary is PE32 i386
@@ -73,7 +86,7 @@ jobs:
         shell: pwsh
         run: |
           $env:ELECTRON_RUN_AS_NODE = '1'
-          & '.\node_modules\electron\dist\electron.exe' 'scripts/sqlite-spike.cjs'
+          & $env:electronPath 'scripts/sqlite-spike.cjs'
           if ($LASTEXITCODE -ne 0) {
             throw "SQLite Electron probe failed with exit code $LASTEXITCODE"
           }
