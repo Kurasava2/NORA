@@ -1,6 +1,10 @@
 import { useEffect } from 'react'
 import { migrateState } from '../../lib/domain.js'
-import { loadAppInfo, loadPersistedState } from '../../lib/persistence/storage.js'
+import {
+  loadAppInfo,
+  loadPersistedState,
+  savePersistedState,
+} from '../../lib/persistence/storage.js'
 import { reportRendererError } from '../../lib/runtime.js'
 
 function recoveryMessage(recoveredFrom) {
@@ -20,17 +24,33 @@ export default function useInitialPersistenceLoad({
 
     async function loadInitialState() {
       try {
-        const [loadResult, appInfo] = await Promise.all([loadPersistedState(), loadAppInfo()])
+        const [loadResult, appInfo] = await Promise.all([
+          loadPersistedState(),
+          loadAppInfo(),
+        ])
         if (!active) return
 
         setAppInfo(appInfo)
-        if (loadResult.data) history.setState(migrateState(loadResult.data))
+        const migratedState = loadResult.data
+          ? migrateState(loadResult.data)
+          : null
+
+        if (migratedState) {
+          history.setState(migratedState)
+          if (loadResult.migrationRequired) {
+            await savePersistedState(migratedState, { verify: true })
+            if (!active) return
+            notify('Старая база безопасно перенесена в SQLite')
+          }
+        }
+
         history.resetHistory()
         setLoadError('')
 
         if (loadResult.recoveredFrom) {
           notify(
-            `База восстановлена из ${recoveryMessage(loadResult.recoveredFrom)}. Проверьте последние изменения.`,
+            `База восстановлена из ${recoveryMessage(loadResult.recoveredFrom)}. ` +
+              'Проверьте последние изменения.',
             true,
           )
         }
