@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
   short_no TEXT NOT NULL,
   model TEXT NOT NULL,
   reg TEXT NOT NULL,
+  position INTEGER NOT NULL,
   data_json TEXT NOT NULL
 );
 
@@ -123,6 +124,7 @@ CREATE TABLE IF NOT EXISTS legacy_allocations (
   data_json TEXT NOT NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_vehicles_position ON vehicles(position);
 CREATE INDEX IF NOT EXISTS idx_statements_period ON statements(period_id, position);
 CREATE INDEX IF NOT EXISTS idx_trips_statement ON trips(statement_id, position);
 CREATE INDEX IF NOT EXISTS idx_movements_lookup
