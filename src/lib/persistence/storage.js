@@ -37,3 +37,16 @@ export async function savePersistedState(state, options = {}) {
   localStorage.setItem(CURRENT_STORAGE_KEY, JSON.stringify(state))
   return { success: true }
 }
+
+export async function replacePersistedState(state) {
+  if (isDesktopRuntime()) {
+    const replaceResult = await window.desktopAPI.replaceData(state)
+    if (!replaceResult?.success) {
+      throw new Error(replaceResult?.error || 'Не удалось заменить локальную базу.')
+    }
+    return replaceResult
+  }
+
+  localStorage.setItem(CURRENT_STORAGE_KEY, JSON.stringify(state))
+  return { success: true }
+}
