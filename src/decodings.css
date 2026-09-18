@@ -28,3 +28,6 @@
   .decoding-actions{justify-content:flex-start;flex-wrap:wrap}
   .decoding-movement-table,.decoding-density-table{min-width:980px}
 }
+
+.decoding-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px;white-space:nowrap}
+.decoding-mismatch-list{display:grid;gap:3px;min-width:145px;color:#fbbf24;font-size:9.5px;line-height:1.25}
