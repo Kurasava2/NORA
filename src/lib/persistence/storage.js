@@ -14,9 +14,9 @@ export async function loadPersistedState() {
     return loadResult
   }
 
-  const storedValue = LOCAL_STORAGE_KEYS.map(storageKey => localStorage.getItem(storageKey)).find(
-    Boolean,
-  )
+  const storedValue = LOCAL_STORAGE_KEYS.map(storageKey =>
+    localStorage.getItem(storageKey),
+  ).find(Boolean)
   return { success: true, data: storedValue ? JSON.parse(storedValue) : null }
 }
 
@@ -25,9 +25,9 @@ export async function loadAppInfo() {
   return window.desktopAPI.getAppInfo()
 }
 
-export async function savePersistedState(state) {
+export async function savePersistedState(state, options = {}) {
   if (isDesktopRuntime()) {
-    const saveResult = await window.desktopAPI.saveData(state)
+    const saveResult = await window.desktopAPI.saveData(state, options)
     if (!saveResult?.success) {
       throw new Error(saveResult?.error || 'Не удалось сохранить локальную базу.')
     }
@@ -36,12 +36,4 @@ export async function savePersistedState(state) {
 
   localStorage.setItem(CURRENT_STORAGE_KEY, JSON.stringify(state))
   return { success: true }
-}
-
-export function savePersistedStateSync(state) {
-  const desktopApi = window.desktopAPI
-  if (!desktopApi?.isElectron || typeof desktopApi.saveDataSync !== 'function') {
-    return { success: true, skipped: true }
-  }
-  return desktopApi.saveDataSync(state)
 }
