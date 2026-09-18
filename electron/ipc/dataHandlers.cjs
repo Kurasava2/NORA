@@ -1,5 +1,8 @@
 const { ipcMain } = require('electron')
-const { getApplicationStore } = require('../database/manager.cjs')
+const {
+  getApplicationStore,
+  replaceApplicationState,
+} = require('../database/manager.cjs')
 const { logError } = require('../errorLog.cjs')
 
 function registerDataHandlers() {
@@ -21,6 +24,15 @@ function registerDataHandlers() {
       return { success: true }
     } catch (error) {
       logError('data:save', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('data:replace', async (_event, data) => {
+    try {
+      return await replaceApplicationState(data)
+    } catch (error) {
+      logError('data:replace', error)
       return { success: false, error: error.message }
     }
   })
