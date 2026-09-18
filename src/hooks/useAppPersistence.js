@@ -3,7 +3,11 @@ import useAutosave from './persistence/useAutosave.js'
 import useInitialPersistenceLoad from './persistence/useInitialPersistenceLoad.js'
 import useWindowCloseRequest from './persistence/useWindowCloseRequest.js'
 import { DEFAULT_STATE, migrateState } from '../lib/domain.js'
-import { isDesktopRuntime, savePersistedState } from '../lib/persistence/storage.js'
+import {
+  isDesktopRuntime,
+  replacePersistedState,
+  savePersistedState,
+} from '../lib/persistence/storage.js'
 import { reportRendererError } from '../lib/runtime.js'
 
 export default function useAppPersistence({
@@ -106,7 +110,7 @@ export default function useAppPersistence({
 
     const freshState = migrateState(DEFAULT_STATE)
     try {
-      await savePersistedState(freshState, { verify: true })
+      await replacePersistedState(freshState)
       history.setState(freshState)
       history.resetHistory()
       setLoadError('')
