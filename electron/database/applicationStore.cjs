@@ -27,6 +27,7 @@ async function openConfiguredDatabase(databaseFilePath) {
 
 function createApplicationStore({ databaseFilePath, legacyJsonPath }) {
   let databasePromise = null
+  let saveQueue = Promise.resolve()
 
   const database = () => {
     if (!databasePromise) {
@@ -36,6 +37,7 @@ function createApplicationStore({ databaseFilePath, legacyJsonPath }) {
   }
 
   const load = async () => {
+    await saveQueue
     const activeDatabase = await database()
     const sqlState = await loadState(activeDatabase)
     if (sqlState) {
@@ -66,13 +68,18 @@ function createApplicationStore({ databaseFilePath, legacyJsonPath }) {
     }
   }
 
-  const save = async (state, options = {}) => {
-    const activeDatabase = await database()
-    await saveState(activeDatabase, state, options)
-    return { success: true }
+  const save = (state, options = {}) => {
+    const saveOperation = saveQueue.then(async () => {
+      const activeDatabase = await database()
+      await saveState(activeDatabase, state, options)
+      return { success: true }
+    })
+    saveQueue = saveOperation.catch(() => {})
+    return saveOperation
   }
 
   const close = async () => {
+    await saveQueue
     if (!databasePromise) return
     const activeDatabase = await databasePromise
     databasePromise = null
