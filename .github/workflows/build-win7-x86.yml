@@ -33,6 +33,12 @@ jobs:
           $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
           $version = $package.version
 
+          if ($lock['version'] -ne $version) {
+            throw "package-lock version $($lock['version']) differs from package version $version"
+          }
+          if ($lock['packages']['']['version'] -ne $version) {
+            throw "package-lock root package version differs from package version $version"
+          }
           if ($package.devDependencies.electron -ne '22.3.27') {
             throw "Electron must stay pinned to 22.3.27 for Windows 7"
           }
