@@ -3,8 +3,11 @@ const sqlite3 = require('sqlite3')
 function openDatabase(filePath) {
   return new Promise((resolve, reject) => {
     const database = new sqlite3.Database(filePath, error => {
-      if (error) reject(error)
-      else resolve(database)
+      if (!error) {
+        resolve(database)
+        return
+      }
+      database.close(() => reject(error))
     })
   })
 }
