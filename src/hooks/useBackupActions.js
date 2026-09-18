@@ -66,7 +66,7 @@ export default function useBackupActions({
 
       try {
         const restoredState = migrateState(importResult.data)
-        const saveResult = await window.desktopAPI.saveData(restoredState)
+        const saveResult = await window.desktopAPI.saveData(restoredState, { verify: true })
         if (!saveResult?.success) {
           throw new Error(saveResult?.error || 'Не удалось записать восстановленную базу на диск.')
         }
