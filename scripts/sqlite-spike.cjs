@@ -1,4 +1,4 @@
-const sqlite3 = require('@vscode/sqlite3').verbose()
+const sqlite3 = require('sqlite3').verbose()
 
 function fail(error) {
   console.error(error?.stack || error)
@@ -25,7 +25,8 @@ const db = new sqlite3.Database(':memory:', error => {
         console.log(JSON.stringify({
           ok: true,
           arch: process.arch,
-          versions: process.versions,
+          electron: process.versions.electron || null,
+          node: process.versions.node,
           sqlite: 'read-write-memory-probe-passed',
         }, null, 2))
       })
