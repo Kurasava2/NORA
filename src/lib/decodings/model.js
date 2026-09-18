@@ -71,9 +71,11 @@ export function createDensityMovement({
   note,
   generated = false,
   sourcePeriodId = null,
+  id = decodingId(),
+  createdAt = new Date().toISOString(),
 }) {
   return {
-    id: decodingId(),
+    id,
     periodId: period.id,
     vehicleId,
     materialName,
@@ -85,6 +87,6 @@ export function createDensityMovement({
     note: String(note || '').trim(),
     generated: Boolean(generated),
     sourcePeriodId,
-    createdAt: new Date().toISOString(),
+    createdAt,
   }
 }
