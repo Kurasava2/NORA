@@ -9,11 +9,13 @@
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "build": "vite build",
     "dist:win7": "npm run dist:win7:x86",
-    "dist:win7:x86": "npm run build && electron-builder --win portable --ia32",
-    "dist:win7:x64": "npm run build && electron-builder --win portable --x64",
-    "dist:dir": "npm run build && electron-builder --win dir --ia32",
+    "dist:win7:x86": "npm run prepare:sqlite:ia32 && npm run build && electron-builder --win portable --ia32",
+    "dist:win7:x64": "npm run prepare:sqlite:x64 && npm run build && electron-builder --win portable --x64",
+    "dist:dir": "npm run prepare:sqlite:ia32 && npm run build && electron-builder --win dir --ia32",
     "test": "node --test tests/backup.test.cjs tests/ru.test.mjs tests/periodImport.test.mjs tests/vehicleMetrics.test.mjs tests/tripValidation.test.mjs tests/autoCalc.test.mjs tests/autoCalcCompatibility.test.mjs tests/modalLayout.test.mjs tests/codeQuality.test.mjs tests/decodings.test.mjs tests/tripPrefillBehavior.test.mjs tests/decodingSchema.test.mjs tests/tripOrder.test.mjs tests/autoCarry.test.mjs tests/materialOrder.test.mjs tests/sqliteDatabase.test.cjs tests/sqliteState.test.cjs tests/sqliteMigration.test.cjs",
-    "verify": "npm test && npm run build"
+    "verify": "npm test && npm run build",
+    "prepare:sqlite:ia32": "node scripts/prepare-sqlite-win32.cjs ia32",
+    "prepare:sqlite:x64": "node scripts/prepare-sqlite-win32.cjs x64"
   },
   "dependencies": {
     "react": "18.3.1",
@@ -52,6 +54,10 @@
     },
     "portable": {
       "artifactName": "GSM-Vedomosti-${version}-portable-Win7-${arch}.${ext}"
-    }
+    },
+    "npmRebuild": false,
+    "asarUnpack": [
+      "node_modules/sqlite3/build/Release/*.node"
+    ]
   }
 }
