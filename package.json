@@ -16,7 +16,6 @@
     "verify": "npm test && npm run build"
   },
   "dependencies": {
-    "@kurasava/ep-ui": "file:vendor/ep-ui/kurasava-ep-ui-1.3.2.tgz",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
