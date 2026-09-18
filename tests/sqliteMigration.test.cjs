@@ -86,3 +86,35 @@ test('SQLite state wins over a changed legacy JSON after migration', async () =>
     fs.rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('SQLite save queue preserves call order and close waits for the final save', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'gsm-migration-'))
+  const legacyJsonPath = path.join(directory, 'gsm-data.json')
+  const databaseFilePath = path.join(directory, 'gsm-data.sqlite')
+  const firstState = legacyState()
+  const secondState = {
+    ...legacyState(),
+    settings: { autosave: true, marker: 'second' },
+  }
+
+  const store = createApplicationStore({ databaseFilePath, legacyJsonPath })
+  try {
+    const firstSave = store.save(firstState)
+    const secondSave = store.save(secondState)
+    await Promise.all([firstSave, secondSave])
+    await store.close()
+
+    const reopenedStore = createApplicationStore({
+      databaseFilePath,
+      legacyJsonPath,
+    })
+    try {
+      const loaded = await reopenedStore.load()
+      assert.deepEqual(loaded.data, secondState)
+    } finally {
+      await reopenedStore.close()
+    }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
