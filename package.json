@@ -18,6 +18,7 @@
     "prepare:sqlite:x64": "node scripts/prepare-sqlite-win32.cjs x64"
   },
   "dependencies": {
+    "@kurasava/ep-ui": "file:vendor/ep-ui/kurasava-ep-ui-1.3.2.tgz",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "sqlite3": "5.1.7"
