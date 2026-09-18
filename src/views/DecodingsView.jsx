@@ -53,7 +53,7 @@ export default function DecodingsView({ state, mutate, notify, confirmAction }) 
     if (!period || !document) return
     const shouldRefresh = await confirmAction({
       title: 'Обновить данные из ведомостей?',
-      message: 'Получения по раздаточной сохранятся. Автораспределение расхода будет пересчитано.',
+      message: 'Получения по раздаточной сохранятся. После обновления нажмите «Пересчитать расход».',
       confirmText: 'Обновить',
     })
     if (!shouldRefresh) return
