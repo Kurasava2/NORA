@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   isElectron: true,
   loadData: () => ipcRenderer.invoke('data:load'),
   saveData: (data, options) => ipcRenderer.invoke('data:save', { data, options }),
+  replaceData: data => ipcRenderer.invoke('data:replace', data),
   exportBackup: (data, suggestedName) =>
     ipcRenderer.invoke('backup:export', { data, suggestedName }),
   importBackup: () => ipcRenderer.invoke('backup:import'),
