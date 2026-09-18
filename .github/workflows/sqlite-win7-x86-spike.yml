@@ -27,11 +27,11 @@ jobs:
       - name: Install exact project dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Install SQLite candidate as ia32
+      - name: Install sqlite3 5.1.7 ia32
         shell: pwsh
         env:
           npm_config_arch: ia32
-        run: npm install --no-save --no-audit --no-fund @vscode/sqlite3@5.1.14-vscode
+        run: npm install --no-save --no-audit --no-fund sqlite3@5.1.7
 
       - name: Download Electron 22.3.27 ia32
         shell: pwsh
@@ -45,48 +45,54 @@ jobs:
           Expand-Archive -Path $zipPath -DestinationPath $target -Force
           "electronPath=$target\electron.exe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-      - name: Verify Electron is ia32
+      - name: Verify Electron and SQLite are PE32 i386
         shell: pwsh
         run: |
-          $env:ELECTRON_RUN_AS_NODE = '1'
-          $arch = & $env:electronPath -p "process.arch"
-          if ($arch.Trim() -ne 'ia32') {
-            throw "Expected Electron process.arch=ia32, got $arch"
-          }
-          $version = & $env:electronPath -p "process.versions.electron"
-          if ($version.Trim() -ne '22.3.27') {
-            throw "Expected Electron 22.3.27, got $version"
+          function Get-PeMachine([string]$Path) {
+            $stream = [IO.File]::OpenRead($Path)
+            $reader = New-Object IO.BinaryReader($stream)
+            try {
+              $stream.Seek(0x3c, [IO.SeekOrigin]::Begin) | Out-Null
+              $peOffset = $reader.ReadInt32()
+              $stream.Seek($peOffset + 4, [IO.SeekOrigin]::Begin) | Out-Null
+              return $reader.ReadUInt16()
+            } finally {
+              $reader.Close()
+              $stream.Close()
+            }
           }
 
-      - name: Verify SQLite native binary is PE32 i386
-        shell: pwsh
-        run: |
-          $binary = Get-ChildItem 'node_modules/@vscode/sqlite3' -Recurse -Filter 'node_sqlite3.node' | Select-Object -First 1
-          if (-not $binary) {
+          $electronMachine = Get-PeMachine $env:electronPath
+          if ($electronMachine -ne 0x014c) {
+            throw ('Expected Electron PE32/i386 machine 0x014c, got 0x{0:X4}' -f $electronMachine)
+          }
+
+          $sqliteBinary = Get-ChildItem 'node_modules/sqlite3' -Recurse -Filter 'node_sqlite3.node' | Select-Object -First 1
+          if (-not $sqliteBinary) {
             throw 'node_sqlite3.node was not found'
           }
-
-          $stream = [IO.File]::OpenRead($binary.FullName)
-          $reader = New-Object IO.BinaryReader($stream)
-          $stream.Seek(0x3c, [IO.SeekOrigin]::Begin) | Out-Null
-          $peOffset = $reader.ReadInt32()
-          $stream.Seek($peOffset + 4, [IO.SeekOrigin]::Begin) | Out-Null
-          $machine = $reader.ReadUInt16()
-          $reader.Close()
-          $stream.Close()
-
-          if ($machine -ne 0x014c) {
-            throw ('Expected SQLite PE32/i386 machine 0x014c, got 0x{0:X4}' -f $machine)
+          $sqliteMachine = Get-PeMachine $sqliteBinary.FullName
+          if ($sqliteMachine -ne 0x014c) {
+            throw ('Expected SQLite PE32/i386 machine 0x014c, got 0x{0:X4}' -f $sqliteMachine)
           }
 
-          Write-Host "SQLite binary: $($binary.FullName)"
-          Write-Host ('PE machine: 0x{0:X4}' -f $machine)
+          Write-Host ('Electron PE machine: 0x{0:X4}' -f $electronMachine)
+          Write-Host ('SQLite PE machine: 0x{0:X4}' -f $sqliteMachine)
+          Write-Host "SQLite binary: $($sqliteBinary.FullName)"
 
-      - name: Run SQLite inside Electron 22 x86
+      - name: Run SQLite CRUD inside Electron 22 ia32
         shell: pwsh
         run: |
+          $stdout = Join-Path $env:RUNNER_TEMP 'sqlite-spike-stdout.txt'
+          $stderr = Join-Path $env:RUNNER_TEMP 'sqlite-spike-stderr.txt'
           $env:ELECTRON_RUN_AS_NODE = '1'
-          & $env:electronPath 'scripts/sqlite-spike.cjs'
-          if ($LASTEXITCODE -ne 0) {
-            throw "SQLite Electron probe failed with exit code $LASTEXITCODE"
+          $process = Start-Process -FilePath $env:electronPath -ArgumentList 'scripts/sqlite-spike.cjs' -NoNewWindow -Wait -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          if (Test-Path $stdout) { Get-Content $stdout }
+          if (Test-Path $stderr) { Get-Content $stderr }
+          if ($process.ExitCode -ne 0) {
+            throw "SQLite Electron probe failed with exit code $($process.ExitCode)"
           }
+          $result = Get-Content $stdout -Raw | ConvertFrom-Json
+          if (-not $result.ok) { throw 'SQLite probe did not report success' }
+          if ($result.arch -ne 'ia32') { throw "Expected runtime arch ia32, got $($result.arch)" }
+          if ($result.electron -ne '22.3.27') { throw "Expected Electron 22.3.27, got $($result.electron)" }
