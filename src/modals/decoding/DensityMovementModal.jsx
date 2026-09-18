@@ -4,40 +4,44 @@ import { decimalCanonical, decimalCompare } from '../../lib/decodings/decimal.js
 import {
   MOVEMENT_OPENING,
   MOVEMENT_RECEIPT,
+  MOVEMENT_SURRENDERED,
 } from '../../lib/decodings/model.js'
 
 const EMPTY_FORM = {
-  vehicleId: '',
-  density: '',
-  liters: '',
-  date: '',
-  waybillNumber: '',
-  kind: MOVEMENT_RECEIPT,
-  note: '',
+  vehicleId: '', density: '', liters: '', date: '', waybillNumber: '',
+  kind: MOVEMENT_RECEIPT, note: '',
+}
+
+function movementForm(movement, vehicleRows, period, defaultKind) {
+  if (!movement) {
+    return {
+      ...EMPTY_FORM,
+      vehicleId: vehicleRows[0]?.vehicleId || '',
+      date: period?.start || '',
+      kind: defaultKind || MOVEMENT_RECEIPT,
+    }
+  }
+  return {
+    vehicleId: movement.vehicleId || '',
+    density: String(movement.density || '').replace('.', ','),
+    liters: movement.liters || '',
+    date: movement.date || period?.start || '',
+    waybillNumber: movement.waybillNumber || '',
+    kind: movement.kind || MOVEMENT_RECEIPT,
+    note: movement.note || '',
+  }
 }
 
 export default function DensityMovementModal({
-  open,
-  onClose,
-  period,
-  materialName,
-  sourceRows,
-  defaultKind,
-  onSave,
-  notify,
+  open, onClose, period, materialName, sourceRows, defaultKind,
+  movement, onSave, notify,
 }) {
   const vehicleRows = useMemo(() => sourceRows || [], [sourceRows])
   const [form, setForm] = useState(EMPTY_FORM)
 
   useEffect(() => {
-    if (!open) return
-    setForm({
-      ...EMPTY_FORM,
-      vehicleId: vehicleRows[0]?.vehicleId || '',
-      date: period?.start || '',
-      kind: defaultKind || MOVEMENT_RECEIPT,
-    })
-  }, [open, period, defaultKind, vehicleRows])
+    if (open) setForm(movementForm(movement, vehicleRows, period, defaultKind))
+  }, [open, movement, period, defaultKind, vehicleRows])
 
   const update = (fieldName, value) => {
     setForm(previousForm => ({ ...previousForm, [fieldName]: value }))
@@ -68,8 +72,8 @@ export default function DensityMovementModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={`Запись плотности · ${materialName}`}
-      subtitle="Данные переносятся вручную из раздаточной ведомости заправки."
+      title={`${movement ? 'Изменить' : 'Новая'} запись · ${materialName}`}
+      subtitle="Данные вручную переносятся из раздаточной ведомости заправки."
       wide
     >
       <form onSubmit={submit}>
@@ -86,6 +90,7 @@ export default function DensityMovementModal({
           <Field label="Тип записи">
             <select className="select" value={form.kind} onChange={event => update('kind', event.target.value)}>
               <option value={MOVEMENT_RECEIPT}>Получено по раздаточной</option>
+              <option value={MOVEMENT_SURRENDERED}>Сдано / слито</option>
               <option value={MOVEMENT_OPENING}>Начальный остаток вручную</option>
             </select>
           </Field>
@@ -107,7 +112,7 @@ export default function DensityMovementModal({
         </div>
         <div className="modal-actions">
           <Button type="button" onClick={onClose}>Отмена</Button>
-          <Button primary type="submit">Сохранить запись</Button>
+          <Button primary type="submit">{movement ? 'Сохранить изменения' : 'Добавить запись'}</Button>
         </div>
       </form>
     </Modal>
