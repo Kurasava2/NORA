@@ -1,3 +1,4 @@
+const { isDeepStrictEqual } = require('node:util')
 const { exec, get, run, withTransaction } = require('./driver.cjs')
 const { readCoreState } = require('./readCore.cjs')
 const { readDecodingState } = require('./readDecoding.cjs')
@@ -41,47 +42,41 @@ async function clearStateTables(database) {
   )
 }
 
-async function saveState(database, state) {
-  if (!state || typeof state !== 'object' || Array.isArray(state)) {
-    throw new Error('Некорректное состояние приложения для записи в SQLite.')
-  }
-
-  return withTransaction(database, async () => {
-    await clearStateTables(database)
-    await setMeta(database, 'storage_format', 'gsm-relational-v1')
-    await setMeta(database, 'logical_state_version', Number(state.version || 0))
-    await setMeta(
-      database,
-      'root_json',
-      serializeJson(
-        withoutFields(state, [
-          'version',
-          'settings',
-          'periods',
-          'vehicleSettings',
-          'vehicles',
-          'decoding',
-          'catalog',
-        ]),
-      ),
-    )
-    await setMeta(
-      database,
-      'decoding_root_json',
-      serializeJson(
-        withoutFields(state.decoding || {}, [
-          'documents',
-          'densityMovements',
-          'allocations',
-          'containers',
-          'legacyDensityLots',
-          'legacyAllocations',
-        ]),
-      ),
-    )
-    await writeCoreState(database, state)
-    await writeDecodingState(database, state.decoding)
-  })
+async function writeState(database, state) {
+  await clearStateTables(database)
+  await setMeta(database, 'storage_format', 'gsm-relational-v1')
+  await setMeta(database, 'logical_state_version', Number(state.version || 0))
+  await setMeta(
+    database,
+    'root_json',
+    serializeJson(
+      withoutFields(state, [
+        'version',
+        'settings',
+        'periods',
+        'vehicleSettings',
+        'vehicles',
+        'decoding',
+        'catalog',
+      ]),
+    ),
+  )
+  await setMeta(
+    database,
+    'decoding_root_json',
+    serializeJson(
+      withoutFields(state.decoding || {}, [
+        'documents',
+        'densityMovements',
+        'allocations',
+        'containers',
+        'legacyDensityLots',
+        'legacyAllocations',
+      ]),
+    ),
+  )
+  await writeCoreState(database, state)
+  await writeDecodingState(database, state.decoding)
 }
 
 async function loadState(database) {
@@ -111,6 +106,22 @@ async function loadState(database) {
     },
     catalog: coreState.catalog,
   }
+}
+
+async function saveState(database, state, options = {}) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
+    throw new Error('Некорректное состояние приложения для записи в SQLite.')
+  }
+
+  return withTransaction(database, async () => {
+    await writeState(database, state)
+    if (options.verify) {
+      const savedState = await loadState(database)
+      if (!isDeepStrictEqual(savedState, state)) {
+        throw new Error('Проверка SQLite после записи не совпала с исходными данными.')
+      }
+    }
+  })
 }
 
 module.exports = {
