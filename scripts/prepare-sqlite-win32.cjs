@@ -19,30 +19,37 @@ const binaryPath = path.join(
   'Release',
   'node_sqlite3.node',
 )
+const prebuildCli = path.resolve(
+  'node_modules',
+  'prebuild-install',
+  'bin.js',
+)
 
 fs.rmSync(path.join(sqliteDirectory, 'build'), {
   recursive: true,
   force: true,
 })
 
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-const rebuild = spawnSync(
-  npmCommand,
-  ['rebuild', 'sqlite3', '--no-audit', '--no-fund'],
+const install = spawnSync(
+  process.execPath,
+  [
+    prebuildCli,
+    '--runtime=napi',
+    '--target=6',
+    `--arch=${targetArch}`,
+    '--platform=win32',
+    '--force',
+  ],
   {
-    cwd: process.cwd(),
+    cwd: sqliteDirectory,
     stdio: 'inherit',
-    env: {
-      ...process.env,
-      npm_config_arch: targetArch,
-      npm_config_platform: 'win32',
-      npm_config_build_from_source: 'false',
-    },
+    env: { ...process.env, npm_config_build_from_source: 'false' },
   },
 )
 
-if (rebuild.status !== 0) {
-  throw new Error(`sqlite3 prebuild preparation failed with code ${rebuild.status}`)
+if (install.error) throw install.error
+if (install.status !== 0) {
+  throw new Error(`sqlite3 prebuild installation failed with code ${install.status}`)
 }
 if (!fs.existsSync(binaryPath)) {
   throw new Error(`sqlite3 native binary was not created: ${binaryPath}`)
