@@ -106,12 +106,24 @@ export function materialSummary(decodingState, document, materialName) {
   const receipts = materialMovements(decodingState, document, materialName)
     .filter(movement => movement.kind === 'receipt')
 
+  const mismatches = rows.filter(row => {
+    const split = sourceRowDistribution(decodingState, document, row)
+    return [
+      [split.opening, row.start],
+      [split.received, row.received],
+      [split.surrendered, row.surrendered || 0],
+      [split.spent, row.spent],
+      [split.end, row.end],
+    ].some(([actual, target]) => Math.abs(Number(actual || 0) - Number(target || 0)) > 0.05)
+  }).length
+
   return {
     ...source,
     distributed,
     machines: new Set(rows.map(row => row.vehicleId)).size,
     densities: densities.size,
     receipts: receipts.length,
+    mismatches,
   }
 }
 
@@ -138,6 +150,7 @@ export function sourceRowDistribution(decodingState, document, row) {
     balances,
     opening: decimalNumber(sourceTotalsByDensity(balances, 'start')) || 0,
     received: decimalNumber(sourceTotalsByDensity(balances, 'received')) || 0,
+    surrendered: decimalNumber(sourceTotalsByDensity(balances, 'surrendered')) || 0,
     spent: decimalNumber(distributedLiters(decodingState, document, row)) || 0,
     end: decimalNumber(sourceTotalsByDensity(balances, 'end')) || 0,
     allocations: allocationsForRow(decodingState, document, row),
