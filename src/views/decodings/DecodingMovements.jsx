@@ -10,12 +10,7 @@ function kindLabel(kind) {
 }
 
 export default function DecodingMovements({
-  decodingState,
-  document,
-  materialName,
-  sourceRows,
-  onAdd,
-  onDelete,
+  decodingState, document, materialName, sourceRows, onAdd, onEdit, onDelete,
 }) {
   const movements = materialMovements(decodingState, document, materialName)
   const vehicles = new Map(sourceRows.map(row => [row.vehicleId, row]))
@@ -24,8 +19,8 @@ export default function DecodingMovements({
     <Card>
       <div className="section-heading">
         <div>
-          <h3>Плотности из раздаточной</h3>
-          <p>Получение вводится вручную; перенос с прошлого периода формируется автоматически.</p>
+          <h3>Раздаточная ведомость и плотности</h3>
+          <p>Ручные записи можно исправлять; перенос прошлого остатка формируется автоматически.</p>
         </div>
         <Button primary onClick={onAdd}>＋ Запись</Button>
       </div>
@@ -51,7 +46,10 @@ export default function DecodingMovements({
                   <td>{movement.note || '—'}</td>
                   <td>
                     {!movement.generated && (
-                      <Button small onClick={() => onDelete(movement)}>×</Button>
+                      <div className="decoding-row-actions">
+                        <Button small onClick={() => onEdit(movement)}>Изм.</Button>
+                        <Button small onClick={() => onDelete(movement)}>×</Button>
+                      </div>
                     )}
                   </td>
                 </tr>
